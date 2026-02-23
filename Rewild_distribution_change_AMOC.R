@@ -1,0 +1,237 @@
+## ------------------------------------------------------
+## Example 2: change in a time series of distributions
+## ------------------------------------------------------
+
+# In this case, we observe distributions each time, and we want to detect changes
+# in the distributions (e.g., parameter changes, distribution type changes)
+
+# npre: number of samples before intervention
+# npost: number of samples after intervention
+# tau: the changepoint
+# mu: location parameter in the control and intervention time series
+# sigma: scale parameter in the control and intervention time series
+# trend.interv.mu: location parameter after intervention
+# trend.interv.sigma: scale parameter after intervention
+
+# Two types of changepoint detection method may be applied to this situation
+
+# The first one involves the evaluation of certain distance measure between the
+# the sample distributions from the control and intervention time series at each
+# time point. We then look for the change in the distance measure to identify
+# the time point when the distributions from the control and the intervention 
+# time series start to differ.
+
+# The second one uses the non-parametric changepoint detection method (in another script)
+
+library(transport)
+library(DescTools)
+
+
+## ----------------------
+## Essential functions
+## ----------------------
+## Functions to generate simulated time series (parameter change)
+CIsim.cdf = function(seed=10, npre, npost, level, trend, ns=100) {
+  # level and trend are vectors corresponding to (mu, sigma)
+  # set trend to 0 if we want to keep some of the parameters fixed
+  set.seed(seed)
+  nt = npre + npost
+  
+  # simulate two series of samples
+  mu = level[1]
+  sigma = level[2]
+  trend.interv.mu = trend[1]
+  trend.interv.sigma = trend[2]
+  
+  mu.control = rep(mu, times=nt)
+  mu.interv = c(rep(mu, times=npre), mu + trend.interv.mu * (1:npost))
+  sigma.control = rep(sigma, times=nt)
+  sigma.interv = c(rep(sigma, times=npre), sigma + trend.interv.sigma * (1:npost))
+  
+  sample.control = sapply(1:length(mu.control), FUN=function(x) { 
+    rnorm(ns, mean=mu.control[x], sd=sigma.control[x]) })
+  sample.interv = sapply(1:length(mu.interv), FUN=function(x) { 
+    rnorm(ns, mean=mu.interv[x], sd=sigma.interv[x]) })
+  
+  return(list(sample.ctr=sample.control, sample.itv=sample.interv))
+}
+
+## The distance measures
+# Wasserstein distance
+# library(transport)
+
+# a function for this task
+WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
+  ns = ncol(sample.ctr)
+  
+  allWS = sapply(1:ns, FUN=function(x) {
+    # Kernel density estimators 
+    y.ctr = sample.ctr[, x]
+    y.itv = sample.itv[, x]
+    yrange = range(c(y.ctr, y.itv))  # use common coordinate?
+    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
+    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
+    
+    pp.ctr = pp(matrix(c(d.ctr$x, d.ctr$y), ncol=2, byrow=FALSE))
+    pp.itv = pp(matrix(c(d.itv$x, d.itv$y), ncol=2, byrow=FALSE))
+    WS = wasserstein(a=pp.ctr, b=pp.itv, p=1, prob=TRUE)
+    
+    return(WS)
+  })
+  return(allWS)
+}
+
+# WSdist(sample.ctr = sample.control, sample.itv = sample.interv,
+#        bw=0.3, nd=50)
+
+## Area-under-curve
+# library(DescTools)
+
+AUCdiff = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
+  ns = ncol(sample.ctr)
+  
+  allAUC = sapply(1:ns, FUN=function(x) {
+    y.ctr = sample.ctr[, x]
+    y.itv = sample.itv[, x]
+    # we need common coordinate for the difference
+    yrange = range(c(y.ctr, y.itv))
+    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
+    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
+    d.dif = d.itv$y - d.ctr$y
+    
+    dAUC = AUC(x=d.ctr$x, y=d.dif, method="trapezoid", absolutearea=TRUE)
+    return(dAUC)
+  })
+  return(allAUC)
+}
+
+# AUCdiff(sample.ctr = sample.control, sample.itv = sample.interv,
+#         bw=0.3, nd=50)
+
+
+## Parametric test (change in trend in parameters)
+trend.stats.cdf = function(y, nt, monthly=TRUE) {
+  if (monthly == TRUE) {
+    mint = 12   # because we know the first one or two years are pre-intervention
+    maxt = nt - 3
+    seglen = mint:maxt
+  } else {
+    mint = 2   
+    maxt = nt - 1
+    seglen = mint:maxt
+  }
+  
+  stats.vec = sapply(1:length(seglen), FUN=function(m){
+    seg1 = 1:seglen[m]
+    seg2 = (seglen[m]+1):nt
+    Xmat = cbind(rep(1, nt), 
+                 c(seg1, rep(seg1[length(seg1)], length(seg2))),
+                 c(rep(0, length(seg1)), seg2-seg2[1]+1))
+    
+    lmfit = lm(y ~ -1 + Xmat)
+    vec = c(0, -1, 1)
+    sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
+    stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
+  })
+  
+  return(c(Tmax = max(abs(stats.vec)), 
+           cpt = which.max(abs(stats.vec))[1] + mint))
+}
+
+
+## ---------------------------
+## Run the simulation study
+## ---------------------------
+## Simulation set up
+npre = sample(12:24, 1)          # between 1 year to 2 years
+npost.vec = seq(24, 120, by=2)   # from 2 years to 10 years after intervention
+
+mu = 10
+sigma = 1
+# consider an annual increase, then covert it into a monthly increase
+trend.increase.mu = round(mu * seq(0.05, 1, by=0.05) / 120, 4)
+trend.increase.sigma = round(sigma * seq(0.1, 0.2, by=0.05) / 120, 4)
+
+# if we want to test all, then use this
+trend.combine = expand.grid(trend.increase.mu, trend.increase.sigma)
+
+
+## Simulation to get the critical value
+dist.measure = c("Wasserstein", "AUC")[1]   # choose a distance measure
+
+alpha = 0.95   # significance level
+bw = 0.3    # band width for density estimation
+nd = 50     # number of division for density estimation
+
+getCritical = sapply(npost.vec, FUN=function(n) {
+  npost = n
+  nt = npre + npost
+  
+  Tmax.list = sapply(1:100, FUN=function(i) {
+    sim.sample = CIsim.cdf(seed=i, npre, npost, level=c(mu, sigma), 
+                           trend=c(0, 0), ns=200)
+    
+    # calculate the distance measure
+    if (dist.measure == "Wasserstein") {
+      diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr,
+                           sample.itv = sim.sample$sample.itv,
+                           bw=bw, nd=nd)
+    } else if (dist.measure == "AUC") {
+      diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr,
+                            sample.itv = sim.sample$sample.itv,
+                            bw=bw, nd=nd)
+    }
+    
+    testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
+    return(testStats)
+    
+  })
+  criticVal = quantile(Tmax.list[1, ], probs=0.95)
+  
+  return(criticVal)
+})
+
+
+## Repeat a large number of times
+simN = 100
+
+time.start = proc.time()
+simResult = lapply(1:simN, FUN=function(i) {
+  
+  teststat.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
+    
+    trend.interv.mu = trend.increase.mu[m]
+    
+    npost.max = npost.vec[length(npost.vec)]
+    ntt = npre + npost.max
+    sim.sample = CIsim.cdf(seed=i*m+m, npre, npost.max, level=c(mu, sigma), 
+                           trend=c(trend.interv.mu, 0), 
+                           ns=200)
+    
+    teststat = sapply(npost.vec, FUN=function(n) {
+      npost = n
+      nt = npre + npost
+      
+      # calculate the distance measure
+      if (dist.measure == "Wasserstein") {
+        diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr[, 1:nt],
+                             sample.itv = sim.sample$sample.itv[, 1:nt],
+                             bw=bw, nd=nd)
+      } else if (dist.measure == "AUC") {
+        diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr[, 1:nt],
+                              sample.itv = sim.sample$sample.itv[, 1:nt],
+                              bw=bw, nd=nd)
+      }
+      
+      testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=FALSE)
+      return(testStats)
+    })
+    return(teststat)
+  })
+  return(teststat.list)
+})
+proc.time() - time.start
+
+# save the result
+# save(simResult, file="sim_result_distribution_change.RData")
+
