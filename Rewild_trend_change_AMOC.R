@@ -135,12 +135,13 @@ trend.stats.ar = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
 ## Run the simulation study
 ## ---------------------------
 ## Simulation set up
-npre = sample(12:24, 1)          # between 1 year to 2 years
+npre = 24                        # 2 years before intervention
 npost.vec = seq(24, 120, by=2)   # from 2 years to 10 years after intervention
 
 level = 10 
 trend.control = 0.005
-trend.increase = round(level * seq(0.05, 1, by=0.05) / 120, 4)  # trend increment
+# trend increment, from 1% to 50% over 10 years
+trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4) 
 # meaning: trend.interv = trend.increase[i]
 
 sigma = 0.05            # noise level
@@ -148,9 +149,10 @@ phi = c(0.5, 0.8)[1]    # auto-correlation strength
 
 ## Simulation to get the critical values of the trend difference test
 alpha = 0.95   # significance level
-getCritical = sapply(npost.vec, FUN=function(n) {
+Nsim = 1000
+getCritical = sapply(npost.vec[c(1, 17, 33)], FUN=function(n) {
   npost = n
-  Tmax.list = sapply(1:100, FUN=function(i) {
+  Tmax.list = sapply(1:Nsim, FUN=function(i) {
     nt = npre + npost
     # the null hypothesis has trend 0
     sim.ts = CIsim(seed=i, npre, npost, level, trend=c(0, 0), sigma)
@@ -160,7 +162,7 @@ getCritical = sapply(npost.vec, FUN=function(n) {
   })
   criticVal = quantile(Tmax.list[1, ], probs=alpha)
   
-  Tmax.list.ar = sapply(1:100, FUN=function(j) {
+  Tmax.list.ar = sapply(1:Nsim, FUN=function(j) {
     nt = npre + npost
     # the null hypothesis has trend 0
     sim.ts.ar = CIsim.ar(seed=n, npre, npost, level, trend=c(0, 0), phi=phi[1], sigma)
@@ -173,21 +175,23 @@ getCritical = sapply(npost.vec, FUN=function(n) {
   return(c(criticVal, criticVal.ar))
 })
 
+# save the result
+# save(getCritical, file="sim_result_trend_change_AMOC.RData")
+
 
 ## Repeat a large number of times
-simN = 100
+simN = 1000
 
 time.start = proc.time()
 simResult = lapply(1:simN, FUN=function(i) {
-  set.seed(i)
-  
+ 
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
     trend.interv = trend.increase[m]
-    
     npost.max = npost.vec[length(npost.vec)]
     ntt = npre + npost.max
-    sim.ts = CIsim(seed=ntt, npre, npost=npost.max, level, 
+    sim.ts = CIsim(seed=i*length(trend.increase)+m, 
+                   npre, npost=npost.max, level, 
                    trend=c(trend.control, trend.interv), sigma)
     
     # for each trend coefficient, simulate time series of increasing length
@@ -205,6 +209,9 @@ simResult = lapply(1:simN, FUN=function(i) {
 # computation time
 proc.time() - time.start
 
+# save the result
+save(simResult, getCritical, file="sim_result_trend_change_AMOC.RData")
+
 
 time.start = proc.time()
 simResult.ar = lapply(1:simN, FUN=function(i) {
@@ -212,11 +219,12 @@ simResult.ar = lapply(1:simN, FUN=function(i) {
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
     trend.interv = trend.increase[m]
-    
     npost.max = npost.vec[length(npost.vec)]
     ntt = npre + npost.max
-    sim.ts = CIsim.ar(seed=i*m+m, npre, npost=npost.max, level, 
-                   trend=c(trend.control, trend.interv), phi, sigma)
+    sim.ts = CIsim.ar(seed=i*length(trend.increase)+m, 
+                      npre, npost=npost.max, level, 
+                      trend=c(trend.control, trend.interv), 
+                      phi, sigma)
     
     # for each trend coefficient, simulate time series of increasing length
     teststat = sapply(npost.vec, FUN=function(n) {
@@ -234,8 +242,8 @@ simResult.ar = lapply(1:simN, FUN=function(i) {
 # computation time
 proc.time() - time.start
 
-
 # save the result
-# save(simResult, simResult.ar, file="sim_result_trend_change.RData")
+save(simResult, simResult.ar, getCritical, file="sim_result_trend_change_AMOC.RData")
+
 
 
