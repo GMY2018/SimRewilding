@@ -143,17 +143,19 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 ## Run the simulation study
 ## ---------------------------
 ## Simulation set up
-npre = sample(12:24, 1)          # between 1 year to 2 years
-npost.vec = seq(24, 120, by=2)   # from 2 years to 10 years after intervention
+npre = 24                        # 2 years pre-intervention
+npost.vec = seq(24, 120, by=3)   # from 2 to 10 years after intervention
 
 mu = 10
 sigma = 1
-# consider an annual increase, then covert it into a monthly increase
-trend.increase.mu = round(mu * seq(0.05, 1, by=0.05) / 120, 4)
-trend.increase.sigma = round(sigma * seq(0.1, 0.2, by=0.05) / 120, 4)
+# trend increment, from 5% to 100% over 10 years
+trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
+# trend increment, from 50% to 200% over 10 years
+trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
 
-# if we want to test all, then use this
-trend.combine = expand.grid(trend.increase.mu, trend.increase.sigma)
+# if we want to test the combinations of changes
+# trend.combine = expand.grid(trend.increase.mu, trend.increase.sigma)
+trend.combine = cbind(trend.increase.mu, rep(trend.increase.sigma, each=3)[-1])
 
 
 ## Simulation to get the critical value
@@ -163,11 +165,12 @@ alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
 
-getCritical = sapply(npost.vec, FUN=function(n) {
+Nsim = 1000
+getCritical = sapply(npost.vec[c(1, 17, 33)], FUN=function(n) {
   npost = n
-  nt = npre + npost
   
-  Tmax.list = sapply(1:100, FUN=function(i) {
+  Tmax.list = sapply(1:Nsim, FUN=function(i) {
+    nt = npre + npost
     sim.sample = CIsim.cdf(seed=i, npre, npost, level=c(mu, sigma), 
                            trend=c(0, 0), ns=200)
     
@@ -184,29 +187,32 @@ getCritical = sapply(npost.vec, FUN=function(n) {
     
     testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
     return(testStats)
-    
   })
-  criticVal = quantile(Tmax.list[1, ], probs=0.95)
   
+  criticVal = quantile(Tmax.list[1, ], probs=0.95)
   return(criticVal)
 })
 
+save(getCritical, file="sim_result_distribution_change_AMOC.RData")
+
 
 ## Repeat a large number of times
-simN = 100
+simN = 1000
 
 time.start = proc.time()
-simResult = lapply(1:simN, FUN=function(i) {
+simResult.mu = lapply(1:simN, FUN=function(i) {
   
   teststat.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
     
     trend.interv.mu = trend.increase.mu[m]
+    # trend.interv.mu = trend.combine[m, 1]
+    # trend.interv.sigma = trend.combine[m, 2]
     
     npost.max = npost.vec[length(npost.vec)]
     ntt = npre + npost.max
-    sim.sample = CIsim.cdf(seed=i*m+m, npre, npost.max, level=c(mu, sigma), 
-                           trend=c(trend.interv.mu, 0), 
-                           ns=200)
+    sim.sample = CIsim.cdf(seed=i*length(trend.increase.mu)+m, 
+                           npre, npost.max, level=c(mu, sigma), 
+                           trend=c(trend.interv.mu, 0), ns=200)
     
     teststat = sapply(npost.vec, FUN=function(n) {
       npost = n
@@ -233,5 +239,52 @@ simResult = lapply(1:simN, FUN=function(i) {
 proc.time() - time.start
 
 # save the result
-# save(simResult, file="sim_result_distribution_change.RData")
+save(simResult.mu, getCritical, file="sim_result_distribution_change_AMOC.RData")
+
+
+## change in variance
+time.start = proc.time()
+simResult.sigma = lapply(1:simN, FUN=function(i) {
+  
+  teststat.list = lapply(1:length(trend.increase.sigma), FUN=function(m) {
+    
+    trend.interv.sigma = trend.increase.sigma[m]
+    # trend.interv.mu = trend.combine[m, 1]
+    # trend.interv.sigma = trend.combine[m, 2]
+    
+    npost.max = npost.vec[length(npost.vec)]
+    ntt = npre + npost.max
+    sim.sample = CIsim.cdf(seed=i*length(trend.increase.sigma)+m, 
+                           npre, npost.max, level=c(mu, sigma), 
+                           trend=c(0, trend.interv.sigma), ns=200)
+    
+    teststat = sapply(npost.vec, FUN=function(n) {
+      npost = n
+      nt = npre + npost
+      
+      # calculate the distance measure
+      if (dist.measure == "Wasserstein") {
+        diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr[, 1:nt],
+                             sample.itv = sim.sample$sample.itv[, 1:nt],
+                             bw=bw, nd=nd)
+      } else if (dist.measure == "AUC") {
+        diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr[, 1:nt],
+                              sample.itv = sim.sample$sample.itv[, 1:nt],
+                              bw=bw, nd=nd)
+      }
+      
+      testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=FALSE)
+      return(testStats)
+    })
+    return(teststat)
+  })
+  return(teststat.list)
+})
+proc.time() - time.start
+
+
+# save the result
+save(simResult.mu, simResult.sigma, getCritical, 
+     file="sim_result_distribution_change_AMOC.RData")
+
 
