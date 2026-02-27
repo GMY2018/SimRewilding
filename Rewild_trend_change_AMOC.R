@@ -118,10 +118,19 @@ trend.stats.ar = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
     } else { y.dif = y.itv }
     
     # fit trend model with auto-correlated noise
-    armafit = arima(y.dif, xreg=Xmat, order=c(1, 0, 0), include.mean=FALSE)
-    vec = c(0, 0, -1, 1)
-    sddiff = sqrt(t(vec) %*% armafit$var.coef %*% vec)
-    stats.ar = (armafit$coef[3] - armafit$coef[4]) / sddiff
+    armafit = try(arima(y.dif, xreg=Xmat, order=c(1, 0, 0), 
+                        include.mean=FALSE), silent=TRUE)
+    if (!is.null(armafit)) {
+      vec = c(0, 0, -1, 1)
+      sddiff = sqrt(t(vec) %*% armafit$var.coef %*% vec)
+      stats.ar = (armafit$coef[3] - armafit$coef[4]) / sddiff
+    } else {
+      # use lm fit if arima fit does not work
+      lmfit = lm(y.dif ~ -1 + Xmat)
+      vec = c(0, -1, 1)
+      sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
+      stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
+    }
   })
   
   # find the time point (tau) that maximises the test statistics
