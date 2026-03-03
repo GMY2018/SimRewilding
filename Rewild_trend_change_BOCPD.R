@@ -2,8 +2,10 @@
 ## Example 1: trend change in time series data
 ## ------------------------------------------------
 
-## Using Bayesian online changepoint detection
-## Functions for the standard BOCPD
+## Using Bayesian online changepoint detection (BOCPD) for detecting trend change
+## Using functions for the standard BOCPD (without SMC or gradient ascent)
+## For now, only consider the i.i.d noise case 
+
 source("BOCPD_functions.R")
 
 
