@@ -147,22 +147,3 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
 # the returned value is the detection delay?
 
 save(simResult.ar, file="sim_result_trend_change_Forecast.RData")
-
-
-## --------------------------------------------------------------------
-# load("sim_result_trend_change_Forecast.RData")
-# 
-# Time.mat =  sapply(1:simN, FUN=function(i) {
-#   sapply(1:length(trend.increase), FUN=function(j) {
-#     simResult.ar[[i]][j]   # the detection delay
-#   })
-# })
-# 
-# delayMat = Time.mat
-# Delay.median = apply(delayMat, MARGIN=1, FUN=median, na.rm=TRUE)
-# Delay.mean = apply(delayMat, MARGIN=1, FUN=mean, na.rm=TRUE)
-# 
-# summary.mat = rbind(Delay.median, Delay.mean)
-# colnames(summary.mat) = paste0("trend_", trend.increase)
-# rownames(summary.mat) = c("median_delay", "mean_delay")
-
