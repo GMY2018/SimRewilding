@@ -229,7 +229,7 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
                               bw=bw, nd=nd)
       }
       
-      testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=FALSE)
+      testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
     return(teststat)
@@ -273,7 +273,7 @@ simResult.sigma = lapply(1:simN, FUN=function(i) {
                               bw=bw, nd=nd)
       }
       
-      testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=FALSE)
+      testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
     return(teststat)
