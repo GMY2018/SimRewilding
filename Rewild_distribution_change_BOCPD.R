@@ -8,10 +8,8 @@
 
 source("BOCPD_functions.R")
 
-.libPaths(c("~/R/library", .libPaths()))
 library(transport)
-# library(DescTools)
-
+library(DescTools)
 
 
 ## Functions to generate simulated time series (parameter change)
