@@ -2,6 +2,9 @@
 ## Example 1: trend change in time series data
 ## ------------------------------------------------
 
+## CAN IGNOR THIS SCRIPT FOR NOW AS THERE ARE SOME PROBLEMS. 
+
+
 # Using the changepoint.forecast package for online detection
 # Detecting changepoint as a change in the forecast errors
 # This can be applied to time series with auto-correlated noise
@@ -48,6 +51,9 @@ CIsim.ar = function(seed=10, npre, npost, level, trend, phi, sigma) {
 npre = 24                        # 2 years pre-intervention
 npost.vec = seq(24, 120, by=3)   # from 2 to 10 years after intervention
 
+npost.max = npost.vec[length(npost.vec)]
+ntt = npre + npost.max
+
 level = 10 
 trend.control = 0.005
 # trend increment, from 1% to 50% over 10 years
@@ -57,40 +63,8 @@ trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4)
 sigma = 0.05            # noise level
 phi = c(0.5, 0.8)[2]    # auto-correlation strength
 
-npost.max = npost.vec[length(npost.vec)]
-ntt = npre + npost.max
-
-
-## Simulation: trend with i.i.d. noises
-# Using exponential smoothing  (bad result...)
-# simN = 1000
-# simResult = lapply(1:simN, FUN=function(s) {
-#   
-#   change.list = sapply(1:length(trend.increase), FUN=function(m) {
-#     
-#     # simulate time series with different scales of trend
-#     trend.interv = trend.increase[m]
-#     sim.ts = CIsim(seed=s*length(trend.increase)+m, 
-#                    npre=npre, npost=npost.max, level=level, 
-#                    trend=c(trend.control, trend.interv), sigma=sigma)
-#     
-#     x.ts = ts(sim.ts$y.itv)
-#     exp.smooth = HoltWinters(x=x.ts[1:npre], gamma=FALSE)
-#     # Need h-step ahead prediction
-#     exp.predict = predict(exp.smooth, n.ahead=npost.max, 
-#                           prediction.interval=TRUE)
-#     xhat.ts = c(fitted(exp.smooth)[, 1], exp.predict[, 1])
-#     r.ts = xhat.ts - sim.ts$y.itv[-(1:2)]
-#     
-#     cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
-#                            detector="PageCUSUM", forecastErrorType="Both")
-#     cpt.est = cpt.fcst@tau     # based on errors
-#     # cpt.est = cpt.fcst@tau2    # based on squared errors
-#   })
-#   
-#   return(change.list)
-# })
-
+# delay in taking effect
+delay.set = 1:20
 
 ## Simulation: trend with AR(1) noises
 # using ARIMA(p, d, q) model (also bad result...)
@@ -101,8 +75,13 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
     
     # simulate time series with different scales of trend
     trend.interv = trend.increase[m]
+    
+    delay = sample(delay.set, size=1)
+    # delay = 0
+    npre.delay = npre + delay
+    npost.delay = npost.max - delay
     sim.ts = CIsim.ar(seed=s*length(trend.increase)+m, 
-                      npre=npre, npost=npost.max, level=level, 
+                      npre=npre.delay, npost=npost.delay, level=level, 
                       trend=c(trend.control, trend.interv), 
                       phi, sigma=sigma)
     
@@ -110,21 +89,21 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
     y.ts = sim.ts$y.itv
     
     # (1) with time as covariate
-    Xmat = cbind(rep(1, ntt), 1:ntt)
-    armafit = try(arima(y.ts[1:npre], xreg=Xmat[1:npre, ], order=c(1, 0, 0),
-                        include.mean=FALSE), silent=TRUE)
-    if (!is.null(armafit)) {
-      # h-step ahead prediction
-      arima.predict = predict(armafit, newxreg=Xmat[-(1:npre), ],
-                              n.ahead=npost.max)
-      r.ts = c(armafit$residuals, arima.predict$pred - y.ts[-(1:npre)])
-
-      # changepoint detection on residual time series
-      cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
-                             detector="PageCUSUM", forecastErrorType="Both")
-      cpt.est = cpt.fcst@tau     # based on errors
-      # cpt.est = cpt.fcst@tau2    # based on squared errors
-    } else { cpt.est = NULL }
+    # Xmat = cbind(rep(1, ntt), 1:ntt)
+    # armafit = try(arima(y.ts[1:npre], xreg=Xmat[1:npre, ], order=c(1, 0, 0),
+    #                     include.mean=FALSE), silent=TRUE)
+    # if (!is.null(armafit)) {
+    #   # h-step ahead prediction
+    #   arima.predict = predict(armafit, newxreg=Xmat[-(1:npre), ],
+    #                           n.ahead=npost.max)
+    #   r.ts = c(armafit$residuals, arima.predict$pred - y.ts[-(1:npre)])
+    # 
+    #   # changepoint detection on residual time series
+    #   cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
+    #                          detector="PageCUSUM", forecastErrorType="Both")
+    #   cpt.est = cpt.fcst@tau     # based on errors
+    #   # cpt.est = cpt.fcst@tau2    # based on squared errors
+    # } else { cpt.est = NULL }
     
     # (2) without time covariate, using 1st difference
     armafit = try(arima(y.ts[1:npre], order=c(1, 1, 0), 
@@ -140,6 +119,8 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
       cpt.est = cpt.fcst@tau     # based on errors
       # cpt.est = cpt.fcst@tau2    # based on squared errors
     } else { cpt.est = NULL }
+
+    return(list(cpt.est=cpt.est, delay=delay))
   })
   
   return(change.list)
