@@ -129,10 +129,6 @@ trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
 # trend increment, from 50% to 200% over 10 years
 trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
 
-# if we want to test the combinations of changes
-trend.combine = cbind(trend.increase.mu, 
-                      rep(trend.increase.sigma, each=3)[-1])
-
 # delay in effect, up to 20 time points
 delay.set = 1:20
 
@@ -297,38 +293,4 @@ simResult = lapply(1:simN, FUN=function(s) {
 
 save(simResult, file="sim_result_distribution_change_BOCPD.RData")
 
-
-## ----------------------------------------------------------------------
-# load("/home/gongm1/Penguin/sim_result_distribution_change_BOCPD.RData")
-# 
-# Cpt.mat = sapply(1:simN, FUN=function(i) {
-#   sapply(1:length(trend.increase.mu), FUN=function(j) {
-#     simResult[[i]][1, j]
-#   })
-# })
-# 
-# Time.mat =  sapply(1:simN, FUN=function(i) {
-#   sapply(1:length(trend.increase.mu), FUN=function(j) {
-#     simResult[[i]][2, j]   # the detection time
-#   })
-# })
-# 
-# Delay.mat =  sapply(1:simN, FUN=function(i) {
-#   sapply(1:length(trend.increase.mu), FUN=function(j) {
-#     simResult[[i]][3, j]   # the detection time
-#   })
-# })
-# 
-# correctMat = abs(Cpt.mat - (Delay.mat + npre)) <= 12
-# Detect.mat = apply(correctMat, MARGIN=1, FUN=sum, na.rm=TRUE) / simN
-# 
-# Cpt.mat2 = Cpt.mat   # create an indication matrix
-# Cpt.mat2[!is.na(Cpt.mat)] = 1
-# delayMat = Time.mat * Cpt.mat2 - (Delay.mat + npre)
-# Delay.median = apply(delayMat, MARGIN=1, FUN=median, na.rm=TRUE)
-# Delay.mean = apply(delayMat, MARGIN=1, FUN=mean, na.rm=TRUE)
-# 
-# summary.mat = rbind(Detect.mat, Delay.median, Delay.mean)
-# colnames(summary.mat) = paste0("trend_", trend.increase.mu)
-# rownames(summary.mat) = c("TP_rate", "median_delay", "mean_delay")
 
