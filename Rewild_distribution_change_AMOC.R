@@ -65,19 +65,13 @@ WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   ns = ncol(sample.ctr)
   
   allWS = sapply(1:ns, FUN=function(x) {
-    # Kernel density estimators 
+    # Wasserstein between two empirical distributions (1d)
     y.ctr = sample.ctr[, x]
     y.itv = sample.itv[, x]
-    yrange = range(c(y.ctr, y.itv))  # use common coordinate?
-    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    
-    pp.ctr = pp(matrix(c(d.ctr$x, d.ctr$y), ncol=2, byrow=FALSE))
-    pp.itv = pp(matrix(c(d.itv$x, d.itv$y), ncol=2, byrow=FALSE))
-    WS = wasserstein(a=pp.ctr, b=pp.itv, p=1, prob=TRUE)
-    
+    WS = wasserstein1d(a=y.ctr, b=y.itv, p=1) 
     return(WS)
   })
+  
   return(allWS)
 }
 
@@ -146,6 +140,9 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 npre = 24                        # 2 years pre-intervention
 npost.vec = seq(24, 120, by=3)   # from 2 to 10 years after intervention
 
+npost.max = npost.vec[length(npost.vec)]
+ntt = npre + npost.max
+
 mu = 10
 sigma = 1
 # trend increment, from 5% to 100% over 10 years
@@ -154,8 +151,10 @@ trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
 trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
 
 # if we want to test the combinations of changes
-# trend.combine = expand.grid(trend.increase.mu, trend.increase.sigma)
-trend.combine = cbind(trend.increase.mu, rep(trend.increase.sigma, each=3)[-1])
+# trend.combine = cbind(trend.increase.mu, rep(trend.increase.sigma, each=3)[-1])
+
+# delay in effect
+delay.set = 1:20
 
 
 ## Simulation to get the critical value
@@ -208,10 +207,12 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
     # trend.interv.mu = trend.combine[m, 1]
     # trend.interv.sigma = trend.combine[m, 2]
     
-    npost.max = npost.vec[length(npost.vec)]
-    ntt = npre + npost.max
+    delay = sample(delay.set, size=1)
+    # delay = 0
+    npre.delay = npre + delay
+    npost.delay = npost.max - delay
     sim.sample = CIsim.cdf(seed=i*length(trend.increase.mu)+m, 
-                           npre, npost.max, level=c(mu, sigma), 
+                           npre=npre.delay, npost=npost.delay, level=c(mu, sigma), 
                            trend=c(trend.interv.mu, 0), ns=200)
     
     teststat = sapply(npost.vec, FUN=function(n) {
@@ -232,7 +233,7 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
       testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
-    return(teststat)
+    return(list(teststat=teststat, delay=delay))
   })
   return(teststat.list)
 })
@@ -249,13 +250,13 @@ simResult.sigma = lapply(1:simN, FUN=function(i) {
   teststat.list = lapply(1:length(trend.increase.sigma), FUN=function(m) {
     
     trend.interv.sigma = trend.increase.sigma[m]
-    # trend.interv.mu = trend.combine[m, 1]
-    # trend.interv.sigma = trend.combine[m, 2]
     
-    npost.max = npost.vec[length(npost.vec)]
-    ntt = npre + npost.max
+    delay = sample(delay.set, size=1)
+    # delay = 0
+    npre.delay = npre + delay
+    npost.delay = npost.max - delay
     sim.sample = CIsim.cdf(seed=i*length(trend.increase.sigma)+m, 
-                           npre, npost.max, level=c(mu, sigma), 
+                           npre=npre.delay, npost=npost.delay, level=c(mu, sigma), 
                            trend=c(0, trend.interv.sigma), ns=200)
     
     teststat = sapply(npost.vec, FUN=function(n) {
@@ -276,7 +277,7 @@ simResult.sigma = lapply(1:simN, FUN=function(i) {
       testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
-    return(teststat)
+    return(list(teststat=teststat, delay=delay))
   })
   return(teststat.list)
 })
