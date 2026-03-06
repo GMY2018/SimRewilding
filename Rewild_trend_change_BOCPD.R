@@ -69,30 +69,31 @@ trend.stats = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
 ## Run the simulation study
 ## ---------------------------
 ## Simulation set up
-# npre = sample(12:24, 1)          # between 1 year to 2 years
 npre = 24                        # 2 years pre-intervention
 npost.vec = seq(24, 120, by=3)   # from 2 to 10 years after intervention
-
-level = 10 
-trend.control = 0.005
-# trend increment, from 1% to 50% over 10 years
-trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4) 
-# trend.increase = round(level * c(0.01, 0.05, seq(0.1, 1, by=0.1)) / 120, 4) 
-
-sigma = 0.05            # noise level
-phi = c(0.5, 0.8)[1]    # auto-correlation strength
 
 npost.max = npost.vec[length(npost.vec)]
 ntt = npre + npost.max
 
+level = 10 
+trend.control = 0.005
+# trend increment, as percentage change to the mean level before intervention
+# trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4) 
+trend.increase = round(level * c(0.01, 0.05, seq(0.1, 1, by=0.1)) / 120, 4) 
+
+sigma = 0.05            # noise level
+phi = c(0.5, 0.8)[1]    # auto-correlation strength
+
+# delay in taking effect
+delay.set = 1:20
 
 ## Basic information and global parameters
 alpha.ini <- c(0, 0.05)             # the trend model
 sigma.ini <- (0.05)^2
 params.ini.list <- list(list(alpha=alpha.ini, sigma=sigma.ini))
 
-a.prior <- c(alpha.ini, 0.5/sigma.ini, 0.5/sigma.ini)    # Normal distribution
-sig.prior <- c(50, 1)                                    # the scale of sd
+a.prior <- c(alpha.ini, 0.5/sigma.ini, 0.5/sigma.ini)     # Normal distribution
+sig.prior <- c(100, 1)                                    # the scale of sd
 prior.list <- list(list(a.prior=a.prior, sig.prior=sig.prior))
 
 nmodel <- 1
@@ -107,7 +108,6 @@ maxp = 50
 np = 40
 msl = 10
 
-
 ## Start the repetitions
 Nsim = 1000
 simResult = lapply(1:Nsim, FUN=function(s) {
@@ -116,8 +116,13 @@ simResult = lapply(1:Nsim, FUN=function(s) {
     
     # simulate time series with different scales of trend
     trend.interv = trend.increase[m]
+    
+    delay = sample(delay.set, size=1)   # if there is a delay effect
+    # delay = 0
+    npre.delay = npre + delay
+    npost.delay = npost.max - delay
     sim.ts = CIsim(seed=s*length(trend.increase)+m, 
-                   npre=npre, npost=npost.max, level=level, 
+                   npre=npre.delay, npost=npost.delay, level=level, 
                    trend=c(trend.control, trend.interv), sigma=sigma)
     
     ## The model object
@@ -214,7 +219,7 @@ simResult = lapply(1:Nsim, FUN=function(s) {
     
     cpt.est = cpt.map$breaks[2]
     time.est = i      # time when the first changepoint is declared
-    c(cpt.est=cpt.est, time.est=time.est)
+    c(cpt.est=cpt.est, time.est=time.est, delay=delay)
   })
   
   return(bocpd.list)
