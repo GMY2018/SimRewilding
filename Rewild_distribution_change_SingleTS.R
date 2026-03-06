@@ -12,9 +12,8 @@
 ## each time point and the "baseline density". 
 ## We look for change in the distance measure time series
 
-.libPaths(c("~/R/library", .libPaths()))
 library(transport)
-# library(DescTools)
+library(DescTools)
 
 
 ## Functions to generate simulated time series (parameter change)
@@ -55,6 +54,7 @@ WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
     WS = wasserstein1d(a=y.ctr, b=y.itv, p=1) 
     return(WS)
   })
+  
   return(allWS)
 }
 
@@ -128,10 +128,6 @@ trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
 # trend increment, from 50% to 200% over 10 years
 trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
 
-# if we want to test the combinations of changes
-trend.combine = cbind(trend.increase.mu, 
-                      rep(trend.increase.sigma, each=3)[-1])
-
 # delay in effect
 delay.set = 1:20
 
@@ -181,8 +177,6 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
   teststat.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
     
     trend.interv.mu = trend.increase.mu[m]
-    # trend.interv.mu = trend.combine[m, 1]
-    # trend.interv.sigma = trend.combine[m, 2]
     
     npost.max = npost.vec[length(npost.vec)]
     ntt = npre + npost.max
@@ -224,51 +218,4 @@ proc.time() - time.start
 # save the result
 save(simResult.mu, getCritical, 
      file="sim_result_distribution_change_SingleTS.RData")
-
-
-## ----------------------------------------------------------------------
-# load("/home/gongm1/Penguin/sim_result_distribution_change_SingleTS.RData")
-# 
-# library(fields)
-# 
-# getCritical
-# 
-# Tmax.mat = sapply(1:simN, FUN=function(i) {
-#   sapply(1:length(trend.increase.mu), FUN=function(j) {
-#     simResult.mu[[i]][[j]][[1]][1, ]
-#   })
-# })
-# 
-# Cpt.mat = sapply(1:simN, FUN=function(i) {
-#   sapply(1:length(trend.increase.mu), FUN=function(j) {
-#     simResult.mu[[i]][[j]][[1]][2, ]
-#   })
-# })
-# 
-# delay.mat = sapply(1:simN, FUN=function(i) {
-#   sapply(1:length(trend.increase.mu), FUN=function(j) {
-#     simResult.mu[[i]][[j]][[2]]
-#   })
-# })
-# 
-# criticalVal = rep(getCritical[1:2], times=c(16, 17))
-# criticalMat = rep(criticalVal, times=length(trend.increase))
-# 
-# Positive.count = apply(Tmax.mat > max(getCritical), MARGIN=1, FUN=sum) / simN
-# Positive.mat = matrix(Positive.count, nrow=length(npost.vec),
-#                       ncol=length(trend.increase.mu))
-# 
-# Delay.mat = apply(delay.mat, MARGIN=2, FUN=rep, each=33)
-# correctMat = abs(Cpt.mat - (Delay.mat + npre)) <= 12
-# Detect.mat = matrix(apply(correctMat, MARGIN=1, FUN=sum) / simN,
-#                     nrow=length(npost.vec), ncol=length(trend.increase.mu))
-# 
-# par(mfrow=c(1, 2), mar=c(4.5, 4.5, 2.5, 4))
-# image.plot(x=npost.vec, y=trend.increase.mu, z=Positive.mat,
-#            col=heat.colors(15), xlab="post intervention length",
-#            ylab="trend coefficients", main="Detection power", cex.main=1)
-# image.plot(x=npost.vec, y=trend.increase.mu, z=Detect.mat,
-#            col=heat.colors(15), xlab="post intervention length",
-#            ylab="trend coefficients", main="True positive", cex.main=1)
-
 
