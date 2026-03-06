@@ -147,19 +147,25 @@ trend.stats.ar = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
 npre = 24                        # 2 years before intervention
 npost.vec = seq(24, 120, by=2)   # from 2 years to 10 years after intervention
 
+npost.max = npost.vec[length(npost.vec)]
+ntt = npre + npost.max
+
 level = 10 
 trend.control = 0.005
-# trend increment, from 1% to 50% over 10 years
-trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4) 
-# meaning: trend.interv = trend.increase[i]
+# trend increment, as percentage change to the mean before intervention
+# trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4) 
+trend.increase = round(level * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4) 
 
 sigma = 0.05            # noise level
 phi = c(0.5, 0.8)[1]    # auto-correlation strength
 
+# delay in effect, up to 20 time points
+delay.set = 1:20
+
 ## Simulation to get the critical values of the trend difference test
 alpha = 0.95   # significance level
 Nsim = 1000
-getCritical = sapply(npost.vec[c(1, 17, 33)], FUN=function(n) {
+getCritical = sapply(npost.vec[c(8, 24)], FUN=function(n) {
   npost = n
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
     nt = npre + npost
@@ -197,10 +203,13 @@ simResult = lapply(1:simN, FUN=function(i) {
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
     trend.interv = trend.increase[m]
-    npost.max = npost.vec[length(npost.vec)]
-    ntt = npre + npost.max
-    sim.ts = CIsim(seed=i*length(trend.increase)+m, 
-                   npre, npost=npost.max, level, 
+    
+    delay = sample(delay.set, size=1)   # sample a delay period
+    # delay = 0   # if there is no delay effect, set it to 0
+    npre.delay = npre + delay
+    npost.delay = npost.max - delay
+    sim.ts = CIsim(seed=i*length(trend.increase) + m, 
+                   npre=npre.delay, npost=npost.delay, level, 
                    trend=c(trend.control, trend.interv), sigma)
     
     # for each trend coefficient, simulate time series of increasing length
@@ -211,7 +220,7 @@ simResult = lapply(1:simN, FUN=function(i) {
                               nt=nt, monthly=TRUE)
       return(testStats)
     })
-    return(teststat)
+    return(list(teststat=teststat, delay=delay))
   })
   return(teststat.list)
 })
@@ -228,10 +237,13 @@ simResult.ar = lapply(1:simN, FUN=function(i) {
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
     trend.interv = trend.increase[m]
-    npost.max = npost.vec[length(npost.vec)]
-    ntt = npre + npost.max
-    sim.ts = CIsim.ar(seed=i*length(trend.increase)+m, 
-                      npre, npost=npost.max, level, 
+
+    delay = sample(delay.set, size=1)   # sample a delay period
+    # delay = 0   # if there is no delay effect, set it to 0
+    npre.delay = npre + delay
+    npost.delay = npost.max - delay
+    sim.ts = CIsim.ar(seed=i*length(trend.increase) + m, 
+                      npre=npre.delay, npost=npost.delay, level, 
                       trend=c(trend.control, trend.interv), 
                       phi, sigma)
     
@@ -244,7 +256,7 @@ simResult.ar = lapply(1:simN, FUN=function(i) {
                                  nt=nt, monthly=TRUE)
       return(testStats)
     })
-    return(teststat)
+    return(list(teststat=teststat, delay=delay))
   })
   return(teststat.list)
 })
