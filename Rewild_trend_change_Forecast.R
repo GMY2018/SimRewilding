@@ -92,7 +92,7 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
     # Xmat = cbind(rep(1, ntt), 1:ntt)
     # armafit = try(arima(y.ts[1:npre], xreg=Xmat[1:npre, ], order=c(1, 0, 0),
     #                     include.mean=FALSE), silent=TRUE)
-    # if (!is.null(armafit)) {
+    # if (is.list(armafit)) {
     #   # h-step ahead prediction
     #   arima.predict = predict(armafit, newxreg=Xmat[-(1:npre), ],
     #                           n.ahead=npost.max)
@@ -108,7 +108,7 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
     # (2) without time covariate, using 1st difference
     armafit = try(arima(y.ts[1:npre], order=c(1, 1, 0), 
                         include.mean=TRUE), silent=TRUE)
-    if (!is.null(armafit)) {
+    if (is.list(armafit)) {
       # h-step ahead prediction
       arima.predict = predict(armafit, n.ahead=npost.max)
       r.ts = c(armafit$residuals, arima.predict$pred - y.ts[-(1:npre)])
