@@ -120,7 +120,7 @@ trend.stats.ar = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
     # fit trend model with auto-correlated noise
     armafit = try(arima(y.dif, xreg=Xmat, order=c(1, 0, 0), 
                         include.mean=FALSE), silent=TRUE)
-    if (!is.null(armafit)) {
+    if (is.list(armafit)) {
       vec = c(0, 0, -1, 1)
       sddiff = sqrt(t(vec) %*% armafit$var.coef %*% vec)
       stats.ar = (armafit$coef[3] - armafit$coef[4]) / sddiff
