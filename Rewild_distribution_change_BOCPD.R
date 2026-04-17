@@ -90,8 +90,8 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 ## Run the simulation study
 ## ---------------------------
 ## Simulation set up
-npre = 24                        # 2 years pre-intervention
-npost.vec = seq(24, 120, by=3)   # from 2 to 10 years after intervention
+npre = 24                         # 2 years pre-intervention
+npost.vec = seq(24, 120, by=12)   # from 2 to 10 years after intervention
 
 npost.max = npost.vec[length(npost.vec)]
 ntt = npre + npost.max
