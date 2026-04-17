@@ -9,7 +9,6 @@
 source("BOCPD_functions.R")
 
 library(transport)
-library(DescTools)
 
 
 ## Functions to generate simulated time series (parameter change)
@@ -56,29 +55,6 @@ WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
 
 # WSdist(sample.ctr = sample.control, sample.itv = sample.interv,
 #        bw=0.3, nd=50)
-
-## Area-under-curve
-
-AUCdiff = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
-  ns = ncol(sample.ctr)
-  
-  allAUC = sapply(1:ns, FUN=function(x) {
-    y.ctr = sample.ctr[, x]
-    y.itv = sample.itv[, x]
-    # we need common coordinate for the difference
-    yrange = range(c(y.ctr, y.itv))
-    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.dif = d.itv$y - d.ctr$y
-    
-    dAUC = AUC(x=d.ctr$x, y=d.dif, method="trapezoid", absolutearea=TRUE)
-    return(dAUC)
-  })
-  return(allAUC)
-}
-
-# AUCdiff(sample.ctr = sample.control, sample.itv = sample.interv,
-#         bw=0.3, nd=50)
 
 ## Parametric test (change in trend in parameters)
 trend.stats.cdf = function(y, nt, monthly=TRUE) {
@@ -132,8 +108,6 @@ delay.set = 1:20
 
 
 ## Simulation to get the critical value
-dist.measure = c("Wasserstein", "AUC")[1]   # choose a distance measure
-
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
@@ -178,16 +152,9 @@ simResult = lapply(1:simN, FUN=function(s) {
                            level=c(mu, sigma), 
                            trend=c(trend.interv.mu, 0), 
                            ns=200)
-    
-    if (dist.measure == "Wasserstein") {
-      diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr,
-                           sample.itv = sim.sample$sample.itv,
-                           bw=bw, nd=nd)
-    } else if (dist.measure == "AUC") {
-      diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr,
-                            sample.itv = sim.sample$sample.itv,
-                            bw=bw, nd=nd)
-    }
+    diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr,
+                         sample.itv = sim.sample$sample.itv,
+                         bw=bw, nd=nd)
     
     ## The model object
     # For the online algorithm (reads in data one by one)
