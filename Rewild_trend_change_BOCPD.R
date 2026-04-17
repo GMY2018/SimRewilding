@@ -78,11 +78,9 @@ ntt = npre + npost.max
 level = 10 
 trend.control = 0.005
 # trend increment, as percentage change to the mean level before intervention
-# trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4) 
 trend.increase = round(level * c(0.01, 0.05, seq(0.1, 1, by=0.1)) / 120, 4) 
 
-sigma = 0.05            # noise level
-phi = c(0.5, 0.8)[1]    # auto-correlation strength
+sigma = 0.05     # noise level
 
 # delay in taking effect
 delay.set = 1:20
@@ -97,7 +95,7 @@ sig.prior <- c(100, 1)                                    # the scale of sd
 prior.list <- list(list(a.prior=a.prior, sig.prior=sig.prior))
 
 nmodel <- 1
-pm <- 1      # prior model probability
+pm <- 1        # prior model probability
 ptr <- 0.02    # run-length distribution
 global.params <- list(pm, ptr)
 
@@ -219,7 +217,7 @@ simResult = lapply(1:Nsim, FUN=function(s) {
     
     cpt.est = cpt.map$breaks[2]
     time.est = i      # time when the first changepoint is declared
-    c(cpt.est=cpt.est, time.est=time.est, delay=delay)
+    return(c(cpt.est=cpt.est, time.est=time.est, delay=delay))
   })
   
   return(bocpd.list)
