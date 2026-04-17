@@ -24,7 +24,6 @@
 # The second one uses the non-parametric changepoint detection method (in another script)
 
 library(transport)
-library(DescTools)
 
 
 ## ----------------------
@@ -78,31 +77,6 @@ WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
 # WSdist(sample.ctr = sample.control, sample.itv = sample.interv,
 #        bw=0.3, nd=50)
 
-## Area-under-curve
-# library(DescTools)
-
-AUCdiff = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
-  ns = ncol(sample.ctr)
-  
-  allAUC = sapply(1:ns, FUN=function(x) {
-    y.ctr = sample.ctr[, x]
-    y.itv = sample.itv[, x]
-    # we need common coordinate for the difference
-    yrange = range(c(y.ctr, y.itv))
-    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.dif = d.itv$y - d.ctr$y
-    
-    dAUC = AUC(x=d.ctr$x, y=d.dif, method="trapezoid", absolutearea=TRUE)
-    return(dAUC)
-  })
-  return(allAUC)
-}
-
-# AUCdiff(sample.ctr = sample.control, sample.itv = sample.interv,
-#         bw=0.3, nd=50)
-
-
 ## Parametric test (change in trend in parameters)
 trend.stats.cdf = function(y, nt, monthly=TRUE) {
   if (monthly == TRUE) {
@@ -138,7 +112,7 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 ## ---------------------------
 ## Simulation set up
 npre = 24                        # 2 years pre-intervention
-npost.vec = seq(24, 120, by=3)   # from 2 to 10 years after intervention
+npost.vec = seq(24, 120, by=10)   # from 2 to 10 years after intervention
 
 npost.max = npost.vec[length(npost.vec)]
 ntt = npre + npost.max
@@ -158,8 +132,6 @@ delay.set = 1:20
 
 
 ## Simulation to get the critical value
-dist.measure = c("Wasserstein", "AUC")[1]   # choose a distance measure
-
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
@@ -173,17 +145,10 @@ getCritical = sapply(npost.vec[c(1, 17, 33)], FUN=function(n) {
     sim.sample = CIsim.cdf(seed=i, npre, npost, level=c(mu, sigma), 
                            trend=c(0, 0), ns=200)
     
-    # calculate the distance measure
-    if (dist.measure == "Wasserstein") {
-      diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr,
-                           sample.itv = sim.sample$sample.itv,
-                           bw=bw, nd=nd)
-    } else if (dist.measure == "AUC") {
-      diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr,
-                            sample.itv = sim.sample$sample.itv,
-                            bw=bw, nd=nd)
-    }
-    
+    # calculate the Wasserstein distance measure
+    diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr,
+                         sample.itv = sim.sample$sample.itv,
+                         bw=bw, nd=nd)
     testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
     return(testStats)
   })
@@ -220,16 +185,9 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
       nt = npre + npost
       
       # calculate the distance measure
-      if (dist.measure == "Wasserstein") {
-        diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr[, 1:nt],
-                             sample.itv = sim.sample$sample.itv[, 1:nt],
-                             bw=bw, nd=nd)
-      } else if (dist.measure == "AUC") {
-        diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr[, 1:nt],
-                              sample.itv = sim.sample$sample.itv[, 1:nt],
-                              bw=bw, nd=nd)
-      }
-      
+      diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr[, 1:nt],
+                           sample.itv = sim.sample$sample.itv[, 1:nt],
+                           bw=bw, nd=nd)
       testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
@@ -264,16 +222,9 @@ simResult.sigma = lapply(1:simN, FUN=function(i) {
       nt = npre + npost
       
       # calculate the distance measure
-      if (dist.measure == "Wasserstein") {
-        diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr[, 1:nt],
-                             sample.itv = sim.sample$sample.itv[, 1:nt],
-                             bw=bw, nd=nd)
-      } else if (dist.measure == "AUC") {
-        diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr[, 1:nt],
-                              sample.itv = sim.sample$sample.itv[, 1:nt],
-                              bw=bw, nd=nd)
-      }
-      
+      diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr[, 1:nt],
+                           sample.itv = sim.sample$sample.itv[, 1:nt],
+                           bw=bw, nd=nd)
       testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
