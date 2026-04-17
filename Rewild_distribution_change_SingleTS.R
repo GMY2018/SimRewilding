@@ -13,7 +13,6 @@
 ## We look for change in the distance measure time series
 
 library(transport)
-library(DescTools)
 
 
 ## Functions to generate simulated time series (parameter change)
@@ -60,27 +59,6 @@ WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
 
 # WSdist2(sample.itv = sample.interv, npre=24, bw=0.3, nd=50)
 
-## Area-under-curve
-AUCdiff2 = function(sample.itv, npre, bw=0.5, nd=50) {
-  ns = ncol(sample.itv)
-  y.ctr = sample.itv[, 1:npre]
-  
-  allAUC = sapply(1:ns, FUN=function(x) {
-    y.itv = sample.itv[, x]
-    # we need common coordinate for the difference
-    yrange = range(c(y.ctr, y.itv))
-    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.dif = d.itv$y - d.ctr$y
-    
-    dAUC = AUC(x=d.ctr$x, y=d.dif, method="trapezoid", absolutearea=TRUE)
-    return(dAUC)
-  })
-  return(allAUC)
-}
-
-# AUCdiff2(sample.itv = sample.interv, npre=24, bw=0.3, nd=50)
-
 ## Parametric test (change in trend in parameters)
 trend.stats.cdf = function(y, nt, monthly=TRUE) {
   if (monthly == TRUE) {
@@ -115,8 +93,8 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 ## Run the simulation study
 ## ---------------------------
 ## Simulation set up
-npre = 24                        # 2 years pre-intervention
-npost.vec = seq(24, 120, by=3)   # from 2 to 10 years after intervention
+npre = 24                         # 2 years pre-intervention
+npost.vec = seq(24, 120, by=10)   # from 2 to 10 years after intervention
 
 npost.max = npost.vec[length(npost.vec)]
 ntt = npre + npost.max
@@ -131,10 +109,7 @@ trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
 # delay in effect
 delay.set = 1:20
 
-
 ## Simulation to get the critical value
-dist.measure = c("Wasserstein", "AUC")[1]   # choose a distance measure
-
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
@@ -149,13 +124,8 @@ getCritical = sapply(npost.vec[c(8, 24)], FUN=function(n) {
                            trend=c(0, 0), ns=200)
     
     # calculate the distance measure
-    if (dist.measure == "Wasserstein") {
-      diff.sample = WSdist2(sample.itv = sim.sample$sample.itv,
-                            npre=npre, bw=bw, nd=nd)
-    } else if (dist.measure == "AUC") {
-      diff.sample = AUCdiff2(sample.itv = sim.sample$sample.itv,
-                             npre=npre, bw=bw, nd=nd)
-    }
+    diff.sample = WSdist2(sample.itv = sim.sample$sample.itv,
+                          npre=npre, bw=bw, nd=nd)
     
     testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
     return(testStats)
@@ -165,12 +135,9 @@ getCritical = sapply(npost.vec[c(8, 24)], FUN=function(n) {
   return(criticVal)
 })
 
-save(getCritical, file="sim_result_distribution_change_SingleTS.RData")
-
 
 ## Repeat a large number of times
 simN = 1000
-
 time.start = proc.time()
 simResult.mu = lapply(1:simN, FUN=function(i) {
   
@@ -197,18 +164,12 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
       nt = npre + npost
       
       # calculate the distance measure
-      if (dist.measure == "Wasserstein") {
-        diff.sample = WSdist2(sample.itv = sim.sample$sample.itv[, 1:nt],
-                              npre=npre, bw=bw, nd=nd)
-      } else if (dist.measure == "AUC") {
-        diff.sample = AUCdiff2(sample.itv = sim.sample$sample.itv[, 1:nt],
-                               npre=npre, bw=bw, nd=nd)
-      }
+      diff.sample = WSdist2(sample.itv = sim.sample$sample.itv[, 1:nt],
+                            npre=npre, bw=bw, nd=nd)
       
       testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
-    # return(teststat)
     return(list(teststat=teststat, delay=delay))
   })
   return(teststat.list)
@@ -216,6 +177,5 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
 proc.time() - time.start
 
 # save the result
-save(simResult.mu, getCritical, 
-     file="sim_result_distribution_change_SingleTS.RData")
+save(simResult.mu, getCritical, file="sim_result_distribution_change_SingleTS.RData")
 
