@@ -94,7 +94,7 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 ## ---------------------------
 ## Simulation set up
 npre = 24                         # 2 years pre-intervention
-npost.vec = seq(24, 120, by=10)   # from 2 to 10 years after intervention
+npost.vec = seq(24, 120, by=12)   # from 2 to 10 years after intervention
 
 npost.max = npost.vec[length(npost.vec)]
 ntt = npre + npost.max
