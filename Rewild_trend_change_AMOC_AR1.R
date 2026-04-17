@@ -116,25 +116,25 @@ ntt = npre + npost.max
 level = 10 
 trend.control = 0.005
 # trend increment, from 1% to 50% over 10 years, or 5% to 100% in 10 years
-# trend.increase = round(level * c(0.01, 0.05, seq(0.1, 0.5, by=0.05)) / 120, 4) 
 trend.increase = round(level * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4) 
 
-sigma.vec = c(0.05, 0.1)            # noise levels
+sigma.vec = 0.05                    # noise levels
 phi.vec = c(0.5, 0.8)               # auto-correlation strength
 
 # delay in effect, up to 20 time points
 delay.set = 1:20
 
+
+## (1) Scenario BA: looking at the intervention time series only
+
 ## Simulation to get the critical values of the trend difference test
-# randomly sample the length of the post change time series
-alpha = 0.95     # significance level
-phi = phi.vec[1]
+alpha = 0.95        # significance level
+phi = phi.vec[1]    # AR(1) coefficient
 Nsim = 1000
 getCritical = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   npost = n
   
-  sigma = sigma.vec[1]
-  Tmax.list.small = sapply(1:Nsim, FUN=function(i) {
+  Tmax.list = sapply(1:Nsim, FUN=function(i) {
     nt = npre + npost
     # the null hypothesis has trend 0
     sim.ts = CIsim.ar(seed=n, npre, npost, level, trend=c(0, 0), phi=phi, sigma)
@@ -143,34 +143,15 @@ getCritical = sapply(npost.vec[c(3, 7)], FUN=function(n) {
                                nt=nt, monthly=TRUE)
     return(testStats)
   })
-  criticVal.small = quantile(Tmax.list.small[1, ], probs=alpha)
+  criticVal = quantile(Tmax.list[1, ], probs=alpha)
   
-  sigma = sigma.vec[2]
-  Tmax.list.large = sapply(1:Nsim, FUN=function(j) {
-    nt = npre + npost
-    # the null hypothesis has trend 0
-    sim.ts = CIsim.ar(seed=n, npre, npost, level, trend=c(0, 0), phi=phi, sigma)
-    testStats = trend.stats.ar(y.ctr=NULL, y.itv=sim.ts$y.itv, 
-                               nt=nt, monthly=TRUE)
-    return(testStats)
-  })
-  criticVal.large = quantile(Tmax.list.large[1, ], probs=alpha)
-  
-  return(c(criticVal.small, criticVal.large))
+  return(criticVal)
 })
-
-# save the result
-save(getCritical, file="sim_result_trend_change_AR1_v1.RData")
-
 
 ## Repeat a large number of times
 simN = 1000
-
-## small noise scenario
-sigma = sigma.vec[1]  
-
 time.start = proc.time()
-simResult.small = lapply(1:simN, FUN=function(s) {
+simResult = lapply(1:simN, FUN=function(s) {
   
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
@@ -205,159 +186,5 @@ simResult.small = lapply(1:simN, FUN=function(s) {
 proc.time() - time.start
 
 # save the result
-save(simResult.small, getCritical, file="sim_result_trend_change_AR1_v1.RData")
-
-
-## large noise scenario
-sigma = sigma.vec[2]  
-
-time.start = proc.time()
-simResult.large = lapply(1:simN, FUN=function(s) {
-  
-  teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
-    
-    trend.interv = trend.increase[m]
-    npost.max = npost.vec[length(npost.vec)]
-    ntt = npre + npost.max
-    
-    # if using delay in effect, otherwise, set delay to 0
-    delay = sample(delay.set, size=1)
-    # delay = 0
-    npre.delay = npre + delay
-    npost.delay = npost.max - delay
-    sim.ts = CIsim.ar(seed=s*length(trend.increase) + m, 
-                      npre=npre.delay, npost=npost.delay, level=level, 
-                      trend=c(trend.control, trend.interv), 
-                      phi=phi, sigma=sigma)
-    
-    # for each trend coefficient, simulate time series of increasing length
-    teststat = sapply(npost.vec, FUN=function(n) {
-      npost = n
-      nt = npre + npost
-      testStats = trend.stats.ar(y.ctr=NULL,   # sim.ts$y.ctr[1:nt]
-                                 y.itv=sim.ts$y.itv[1:nt], 
-                                 nt=nt, monthly=TRUE)
-      return(testStats)
-    })
-    return(list(teststat=teststat, delay=delay))
-  })
-  return(teststat.list)
-})
-# computation time
-proc.time() - time.start
-
-# save the result
-save(simResult.small, simResult.large, getCritical, 
-     file="sim_result_trend_change_AR1_v1.RData")
-
-
-
-## --------------------------------------------------------------------
-load("/home/gongm1/Penguin/sim_result_trend_change_AR1_v1.RData")
-
-library(fields)
-
-getCritical
-
-# small noise
-Tmax.mat = sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.small[[i]][[j]][[1]][1, ]
-  })
-})
-
-Cpt.mat = sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.small[[i]][[j]][[1]][2, ]
-  })
-})
-
-delay.mat = sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.small[[i]][[j]][[2]]
-  })
-})
-
-# threshold
-nl = round(length(npost.vec) / 2)
-criticalVal = rep(getCritical[1, 1:2], times=c(nl, length(npost.vec)-nl))
-criticalMat = rep(criticalVal, times=length(trend.increase))
-
-# large noise
-Tmax.mat = sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.large[[i]][[j]][[1]][1, ]
-  })
-})
-
-Cpt.mat = sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.large[[i]][[j]][[1]][2, ]
-  })
-})
-
-delay.mat = sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.large[[i]][[j]][[2]]
-  })
-})
-
-# threshold
-nl = round(length(npost.vec) / 2)
-criticalVal = rep(getCritical[2, 1:2], times=c(nl, length(npost.vec)-nl))
-criticalMat = rep(criticalVal, times=length(trend.increase))
-
-
-# how many time there is a positive claim of a cpt
-# H0: there is no cpt, H1: there is a cpt
-Positive.count = apply(Tmax.mat > criticalMat, MARGIN=1, FUN=sum)
-Positive.mat = matrix(Positive.count / simN, nrow=length(npost.vec),
-                      ncol=length(trend.increase))
-
-# True positive rate: how many time the cpt is correctly detected
-# H0: there is no cpt at tau, H1: there is a cpt at tau
-Cpt.mat2 = Cpt.mat
-Cpt.mat2[Tmax.mat < criticalMat] = -100
-# give a large negative value to mean no cpt is detected
-Delay.mat = apply(delay.mat, MARGIN=2, FUN=rep, each=length(npost.vec))
-gap.mat = abs(Cpt.mat2 - (Delay.mat + npre))
-Correct.count = apply(gap.mat <= 10, MARGIN=1, FUN=sum)
-TPR.mat = matrix(Correct.count / simN, nrow=length(npost.vec),
-                 ncol=length(trend.increase))
-
-# False discovery rate: among all positive claims, how many get the cpt wrongly
-# H0: there is no cpt at tau, H1: there is a cpt at tau
-Wrong.count = Positive.count - Correct.count
-FDR.mat = matrix(Wrong.count / Positive.count, nrow=length(npost.vec),
-                 ncol=length(trend.increase))
-
-
-## Plot the result
-trend.percent = c(0.05, seq(0.1, 1, by=0.1)) * 100
-
-# par(mfrow=c(1, 2), mar=c(4, 4, 2.5, 4), cex=1)
-png(filename="Sim_trend_change_AMOC_AR1_large_1_v1.png", width=550, height=400, unit="px",
-    pointsize=18)
-par(mfrow=c(1, 1), mar=c(4.2, 4.2, 2.5, 3), cex=1)
-image.plot(x=npost.vec, y=trend.percent[1:7], z=Positive.mat[, 1:7], col=heat.colors(15),
-           xlab="post intervention length", ylab="trend increase (%)",
-           main="Dectection power", cex.main=1)
-dev.off()
-
-png(filename="Sim_trend_change_AMOC_AR1_large_2_v1.png", width=550, height=400, unit="px",
-    pointsize=18)
-par(mfrow=c(1, 1), mar=c(4.2, 4.2, 2.5, 3), cex=1)
-image.plot(x=npost.vec, y=trend.percent[1:7], z=TPR.mat[, 1:7], col=heat.colors(15),
-           xlab="post intervention length", ylab="trend increase (%)",
-           main="True positive rate", cex.main=1)
-dev.off()
-
-png(filename="Sim_trend_change_AMOC_AR1_large_3_v1.png", width=550, height=400, unit="px",
-    pointsize=18)
-par(mfrow=c(1, 1), mar=c(4.2, 4.2, 2.5, 3), cex=1)
-image.plot(x=npost.vec, y=trend.percent[1:7], z=FDR.mat[, 1:7], col=heat.colors(15),
-           xlab="post intervention length", ylab="trend increase (%)",
-           main="False discovery rate", cex.main=1)
-dev.off()
-
+save(simResult, getCritical, file="sim_result_trend_change_AR1.RData")
 
