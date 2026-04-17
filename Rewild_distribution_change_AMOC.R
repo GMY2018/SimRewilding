@@ -112,7 +112,7 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 ## ---------------------------
 ## Simulation set up
 npre = 24                        # 2 years pre-intervention
-npost.vec = seq(24, 120, by=10)   # from 2 to 10 years after intervention
+npost.vec = seq(24, 120, by=12)   # from 2 to 10 years after intervention
 
 npost.max = npost.vec[length(npost.vec)]
 ntt = npre + npost.max
@@ -129,7 +129,6 @@ trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
 
 # delay in effect
 delay.set = 1:20
-
 
 ## Simulation to get the critical value
 alpha = 0.95   # significance level
@@ -162,15 +161,12 @@ save(getCritical, file="sim_result_distribution_change_AMOC.RData")
 
 ## Repeat a large number of times
 simN = 1000
-
 time.start = proc.time()
 simResult.mu = lapply(1:simN, FUN=function(i) {
   
   teststat.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
     
     trend.interv.mu = trend.increase.mu[m]
-    # trend.interv.mu = trend.combine[m, 1]
-    # trend.interv.sigma = trend.combine[m, 2]
     
     delay = sample(delay.set, size=1)
     # delay = 0
