@@ -101,7 +101,6 @@ trend.stats.ar = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
 }
 
 
-
 ## ---------------------------
 ## Run the simulation study
 ## ---------------------------
