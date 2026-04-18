@@ -18,7 +18,6 @@
 # y_t = level + noise   (for t <= tau)
 # y_t = level + trend * (t-tau) + noise  (for t > tau)
 
-.libPaths(c("~/R/library", .libPaths()))
 
 ## ----------------------
 ## Essential functions
