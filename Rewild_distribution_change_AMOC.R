@@ -13,15 +13,11 @@
 # trend.interv.mu: location parameter after intervention
 # trend.interv.sigma: scale parameter after intervention
 
-# Two types of changepoint detection method may be applied to this situation
-
-# The first one involves the evaluation of certain distance measure between the
+# The changepoint detection method involves the evaluation of a distance measure between
 # the sample distributions from the control and intervention time series at each
 # time point. We then look for the change in the distance measure to identify
 # the time point when the distributions from the control and the intervention 
 # time series start to differ.
-
-# The second one uses the non-parametric changepoint detection method (in another script)
 
 library(transport)
 
