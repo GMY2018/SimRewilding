@@ -4,7 +4,7 @@
 
 # Using the changepoint.forecast package for online detection
 # Detecting changepoint as a change in the forecast errors
-# We consider location change of the distribution
+# We consider location changes of the distribution
 
 library(transport)
 library(changepoint.forecast)
@@ -121,16 +121,14 @@ delay.set = 1:20
 
 
 ## Simulation to get the critical value
-dist.measure = c("Wasserstein", "AUC")[1]   # choose a distance measure
-
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
 
 
-## Simulation: location change
+## Simulation: CIBA (control-intervention, before-after)
 simN = 1000
-simResult.mu = lapply(1:simN, FUN=function(s) {
+simResult.mu1 = lapply(1:simN, FUN=function(s) {
   
   change.list = sapply(1:length(trend.increase.mu), FUN=function(m) {
     
@@ -148,15 +146,9 @@ simResult.mu = lapply(1:simN, FUN=function(s) {
                            trend=c(trend.interv.mu, 0), 
                            ns=200)
     
-    if (dist.measure == "Wasserstein") {
-      diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr,
-                           sample.itv = sim.sample$sample.itv,
-                           bw=bw, nd=nd)
-    } else if (dist.measure == "AUC") {
-      diff.sample = AUCdiff(sample.ctr = sim.sample$sample.ctr,
-                            sample.itv = sim.sample$sample.itv,
-                            bw=bw, nd=nd)
-    }
+    diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr,
+                         sample.itv = sim.sample$sample.itv,
+                         bw=bw, nd=nd)
     
     ## Train the model on pre-data, and then predict the post-data
     y.ts = diff.sample
@@ -171,7 +163,6 @@ simResult.mu = lapply(1:simN, FUN=function(s) {
     cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
                            detector="PageCUSUM", forecastErrorType="Both")
     time.est = cpt.fcst@tau      # based on errors
-    # time.est = cpt.fcst@tau2     # based on squared errors
     
     # retrieve the changepoint using AMOC for trend change
     if (!is.infinite(time.est)) {
@@ -186,10 +177,8 @@ simResult.mu = lapply(1:simN, FUN=function(s) {
   return(change.list)
 })
 
-save(simResult.mu, file="sim_result_distribution_change_Forecast.RData")
 
-
-## Change in location, single intervention time series
+## Simulation: BA (before-after), intervention time series only
 simResult.mu2 = lapply(1:simN, FUN=function(s) {
   
   change.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
@@ -207,13 +196,8 @@ simResult.mu2 = lapply(1:simN, FUN=function(s) {
                            trend=c(trend.interv.mu, 0), 
                            ns=200)
     
-    if (dist.measure == "Wasserstein") {
-      diff.sample = WSdist2(sample.itv = sim.sample$sample.itv,
-                            npre=npre, bw=bw, nd=nd)
-    } else if (dist.measure == "AUC") {
-      diff.sample = AUCdiff2(sample.itv = sim.sample$sample.itv,
-                             npre=npre, bw=bw, nd=nd)
-    }
+    diff.sample = WSdist2(sample.itv = sim.sample$sample.itv,
+                          npre=npre, bw=bw, nd=nd)
     
     ## Train the model on pre-data, and then predict the post-data
     y.ts = diff.sample
@@ -228,7 +212,6 @@ simResult.mu2 = lapply(1:simN, FUN=function(s) {
     cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
                            detector="PageCUSUM", forecastErrorType="Both")
     time.est = cpt.fcst@tau      # based on errors
-    # time.est = cpt.fcst@tau2     # based on squared errors
     
     # retrieve the changepoints
     if (!is.infinite(time.est)) {
@@ -245,75 +228,6 @@ simResult.mu2 = lapply(1:simN, FUN=function(s) {
   return(change.list)
 })
 
-save(simResult.mu, simResult.mu2, 
+save(simResult.mu1, simResult.mu2, 
      file="sim_result_distribution_change_Forecast.RData")
-
-
-## --------------------------------------------------------------------
-load("sim_result_distribution_change_Forecast.RData")
- 
-# location change
-Cpt.mat =  sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.mu[[i]][1, j]   # the estimated changepoint
-  })
-})
-
-Time.mat =  sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase.mu), FUN=function(j) {
-    simResult.mu[[i]][2, j]   # the detection delay
-  })
-})
-
-Delay.mat =  sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase.mu), FUN=function(j) {
-    simResult.mu[[i]][3, j]   # the delay in effect
-  })
-})
-
-# location change for single time series
-Cpt.mat =  sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase), FUN=function(j) {
-    simResult.mu2[[i]][1, j]   # the estimated changepoint
-  })
-})
-
-Time.mat =  sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase.mu), FUN=function(j) {
-    simResult.mu2[[i]][2, j]   # the detection delay
-  })
-})
-
-Delay.mat =  sapply(1:simN, FUN=function(i) {
-  sapply(1:length(trend.increase.mu), FUN=function(j) {
-    simResult.mu2[[i]][3, j]   # the delay in effect
-  })
-})
-
-Cpt.true = Delay.mat + npre
-correctMat = abs(Cpt.mat - Cpt.true) <= 2
-Detect.mat = apply(correctMat, MARGIN=1, FUN=sum, na.rm=TRUE) / simN
-
-delayMat = Time.mat + npre - Cpt.true
-Delay.median = apply(delayMat, MARGIN=1, FUN=median, na.rm=TRUE)
-Delay.mean = apply(delayMat, MARGIN=1, FUN=function(x) {
-  x.fin = x[!is.infinite(x)]   # remove the infinite values (i.e., no detection)
-  mean(x.fin, na.rm=TRUE)
-})
-Delay.std = apply(delayMat, MARGIN=1, FUN=function(x) {
-  x.fin = x[!is.infinite(x)]
-  sd(x.fin, na.rm=TRUE)
-})
-NoDetection = apply(Time.mat, MARGIN=1, FUN=function(x) {
-  sum(is.infinite(x))
-})
-
-summary.mat = rbind(Detect.mat, Delay.median, Delay.mean, Delay.std, NoDetection)
-colnames(summary.mat) = paste0("trend_", trend.increase.mu)
-rownames(summary.mat) = c("True_pos", "median_delay", "mean_delay", "std_delay",
-                          "no_detection")
-summary.mat
-
-# the result for the i.i.d. case makes senes
-# the result for the auto-correlated case doesn't...
 
