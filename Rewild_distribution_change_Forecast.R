@@ -70,30 +70,40 @@ WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
 # WSdist2(sample.itv = sample.interv, npre=24, bw=0.3, nd=50)
 
 ## Parametric test (change in trend in parameters)
-trend.stats.cdf = function(y, nt, monthly=TRUE) {
+trend.stats = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
+  # If we only have the intervention time series, set y.ctr to NULL
+  
   if (monthly == TRUE) {
     mint = 24   # because we know the first one or two years are pre-intervention
     maxt = nt - 4
     seglen = mint:maxt
   } else {
-    mint = 2   
+    mint = 2
     maxt = nt - 1
     seglen = mint:maxt
   }
   
-  stats.vec = sapply(1:length(seglen), FUN=function(k){
-    seg1 = 1:seglen[k]
-    seg2 = (seglen[k]+1):nt
+  # evaluate the test statistics for different choices of changpoint
+  stats.vec = sapply(1:length(seglen), FUN=function(m){
+    seg1 = 1:seglen[m]
+    seg2 = (seglen[m]+1):nt
     Xmat = cbind(rep(1, nt), 
                  c(seg1, rep(seg1[length(seg1)], length(seg2))),
                  c(rep(0, length(seg1)), seg2-seg2[1]+1))
     
-    lmfit = lm(y ~ -1 + Xmat)
+    if (!is.null(y.ctr)) {
+      y.dif = y.itv - y.ctr
+    } else { y.dif = y.itv }
+    
+    # fit simple trend model (linear regression)
+    lmfit = lm(y.dif ~ -1 + Xmat)
     vec = c(0, -1, 1)
     sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
     stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
   })
   
+  # find the time point (tau) that maximises the test statistics
+  # tau could be a potential changepoint, if it is greater that the critical value
   return(c(Tmax = max(abs(stats.vec)), 
            cpt = which.max(abs(stats.vec))[1] + mint))
 }
@@ -167,7 +177,8 @@ simResult.mu1 = lapply(1:simN, FUN=function(s) {
     # retrieve the changepoint using AMOC for trend change
     if (!is.infinite(time.est)) {
       nt = npre + time.est
-      testStats = trend.stats.cdf(y=r.ts[1:nt], nt=nt, monthly=TRUE)
+      testStats = trend.stats(y.ctr=NULL, y.itv=r.ts[1:nt], 
+                              nt=nt, monthly=TRUE)
       cpt.est = testStats[2]
     } else { cpt.est = Inf }
     
@@ -216,7 +227,8 @@ simResult.mu2 = lapply(1:simN, FUN=function(s) {
     # retrieve the changepoints
     if (!is.infinite(time.est)) {
       nt = npre + time.est
-      testStats = trend.stats.cdf(y=r.ts[1:nt], nt=nt, monthly=TRUE)
+      testStats = trend.stats(y.ctr=NULL, y.itv=r.ts[1:nt], 
+                              nt=nt, monthly=TRUE)
       cpt.est = testStats[2]
     } else {
       cpt.est = Inf
