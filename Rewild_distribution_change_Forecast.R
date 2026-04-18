@@ -2,11 +2,10 @@
 ## Example 2: change in a time series of distributions
 ## ------------------------------------------------------
 
-## Using Bayesian online changepoint detection for trend change
-## in the distance measure before 
-## For now, we only consider the i.i.d noise case 
+# Using the changepoint.forecast package for online detection
+# Detecting changepoint as a change in the forecast errors
+# We consider location change of the distribution
 
-.libPaths(c("~/R/library", .libPaths()))
 library(transport)
 library(changepoint.forecast)
 
@@ -39,7 +38,6 @@ CIsim.cdf = function(seed=10, npre, npost, level, trend, ns=100) {
 
 ## The distance measures
 # Wasserstein distance
-
 WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   ns = ncol(sample.ctr)
   
@@ -70,50 +68,6 @@ WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
 }
 
 # WSdist2(sample.itv = sample.interv, npre=24, bw=0.3, nd=50)
-
-## Area-under-curve
-
-AUCdiff = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
-  ns = ncol(sample.ctr)
-  
-  allAUC = sapply(1:ns, FUN=function(x) {
-    y.ctr = sample.ctr[, x]
-    y.itv = sample.itv[, x]
-    # we need common coordinate for the difference
-    yrange = range(c(y.ctr, y.itv))
-    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.dif = d.itv$y - d.ctr$y
-    
-    dAUC = AUC(x=d.ctr$x, y=d.dif, method="trapezoid", absolutearea=TRUE)
-    return(dAUC)
-  })
-  return(allAUC)
-}
-
-# AUCdiff(sample.ctr = sample.control, sample.itv = sample.interv,
-#         bw=0.3, nd=50)
-
-AUCdiff2 = function(sample.itv, npre, bw=0.5, nd=50) {
-  ns = ncol(sample.itv)
-  y.ctr = sample.itv[, 1:npre]
-  
-  allAUC = sapply(1:ns, FUN=function(x) {
-    y.itv = sample.itv[, x]
-    # we need common coordinate for the difference
-    yrange = range(c(y.ctr, y.itv))
-    d.ctr = density(y.ctr, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.itv = density(y.itv, bw=bw, n=nd, from=yrange[1], to=yrange[2])
-    d.dif = d.itv$y - d.ctr$y
-    
-    dAUC = AUC(x=d.ctr$x, y=d.dif, method="trapezoid", absolutearea=TRUE)
-    return(dAUC)
-  })
-  return(allAUC)
-}
-
-# AUCdiff2(sample.itv = sample.interv, npre=24, bw=0.3, nd=50)
-
 
 ## Parametric test (change in trend in parameters)
 trend.stats.cdf = function(y, nt, monthly=TRUE) {
@@ -148,9 +102,9 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
 ## ---------------------------
 ## Run the simulation study
 ## ---------------------------
-## Simulation set up
-npre = 24                         # 2 years pre-intervention
-npost.vec = seq(24, 120, by=12)   # from 2 to 10 years after intervention
+## Simulation set up, assuming a higher sampling frequency
+npre = 24                         # e.g., 24 months (2 years) pre-intervention
+npost.vec = seq(24, 120, by=12)   # e.g., from 2 to 10 years after intervention
 
 npost.max = npost.vec[length(npost.vec)]
 ntt = npre + npost.max
