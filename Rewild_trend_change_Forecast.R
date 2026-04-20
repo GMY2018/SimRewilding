@@ -99,11 +99,10 @@ phi = 0.8        # auto-correlation strength
 # delay in effect, up to 20 time points
 delay.set = 1:20
 
-## Simulation: trend with AR(1) noises
-alpha = 0.95     # significance level
-simN = 1000
 
-## BA (before-after) + i.i.d. noise time series
+## (1) Simulation: BA (before-after) + i.i.d. noise time series
+# alpha = 0.95     # significance level
+simN = 1000
 simResult = lapply(1:simN, FUN=function(s) {
   
   change.list = sapply(1:length(trend.increase), FUN=function(m) {
@@ -149,7 +148,9 @@ simResult = lapply(1:simN, FUN=function(s) {
   return(change.list)
 })
 
-## BA (before-after) + AR(1) noise time series
+
+## (2) Simulation: BA (before-after) + AR(1) noise time series
+simN = 1000
 simResult.ar = lapply(1:simN, FUN=function(s) {
   
   change.list = sapply(1:length(trend.increase), FUN=function(m) {
