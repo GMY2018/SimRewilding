@@ -53,9 +53,6 @@ WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   return(allWS)
 }
 
-# WSdist(sample.ctr = sample.control, sample.itv = sample.interv,
-#        bw=0.3, nd=50)
-
 ## Parametric test (change in trend in parameters)
 trend.stats.cdf = function(y, nt, monthly=TRUE) {
   if (monthly == TRUE) {
@@ -100,19 +97,17 @@ mu = 10
 sigma = 1
 # trend increment, from 5% to 100% over 10 years
 trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
-# trend increment, from 50% to 200% over 10 years
-trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
 
 # delay in effect, up to 20 time points
 delay.set = 1:20
 
 
-## Simulation to get the critical value
+## Some global parameters
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
 
-## Basic information and global parameters
+## initial values and priors for BOCPD
 alpha.ini <- c(0, 0.05)             # the trend model
 sigma.ini <- (0.05)^2
 params.ini.list <- list(list(alpha=alpha.ini, sigma=sigma.ini))
