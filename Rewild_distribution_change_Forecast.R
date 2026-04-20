@@ -38,6 +38,8 @@ CIsim.cdf = function(seed=10, npre, npost, level, trend, ns=100) {
 
 ## The distance measures
 # Wasserstein distance
+
+# With control and intervention time series
 WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   ns = ncol(sample.ctr)
   
@@ -51,9 +53,7 @@ WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   return(allWS)
 }
 
-# WSdist(sample.ctr = sample.control, sample.itv = sample.interv,
-#        bw=0.3, nd=50)
-
+# With intervention time series only
 WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
   ns = ncol(sample.itv)
   y.ctr = sample.itv[, 1:npre]
@@ -66,8 +66,6 @@ WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
   })
   return(allWS)
 }
-
-# WSdist2(sample.itv = sample.interv, npre=24, bw=0.3, nd=50)
 
 ## Parametric test (change in trend in parameters)
 trend.stats = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
@@ -123,20 +121,17 @@ mu = 10
 sigma = 1
 # trend increment, from 5% to 100% over 10 years
 trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
-# trend increment, from 20% to 200% over 10 years
-trend.increase.sigma = round(sigma * c(0.2, seq(0.5, 2, by=0.5)) / 120, 4)
 
 # delay in effect, up to 20 time points
 delay.set = 1:20
 
 
-## Simulation to get the critical value
+## Some global parameters
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
 
-
-## Simulation: CIBA (control-intervention, before-after)
+## (1) Simulation: CIBA (control-intervention, before-after)
 simN = 1000
 simResult.mu1 = lapply(1:simN, FUN=function(s) {
   
@@ -189,7 +184,7 @@ simResult.mu1 = lapply(1:simN, FUN=function(s) {
 })
 
 
-## Simulation: BA (before-after), intervention time series only
+## (2) Simulation: BA (before-after), intervention time series only
 simResult.mu2 = lapply(1:simN, FUN=function(s) {
   
   change.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
