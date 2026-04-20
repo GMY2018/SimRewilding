@@ -78,7 +78,7 @@ ntt = npre + npost.max
 level = 10 
 trend.control = 0.005
 # trend increment, as percentage change to the mean level before intervention
-trend.increase = round(level * c(0.01, 0.05, seq(0.1, 1, by=0.1)) / 120, 4) 
+trend.increase = round(level * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)  
 
 sigma = 0.05     # noise level
 
