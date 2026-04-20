@@ -53,20 +53,18 @@ CIsim.cdf = function(seed=10, npre, npost, level, trend, ns=100) {
 
 ## The distance measures
 # Wasserstein distance
-# library(transport)
 
 # Control and intervention time series
 WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   ns = ncol(sample.ctr)
   
   allWS = sapply(1:ns, FUN=function(x) {
-    # Wasserstein between two empirical distributions (1d)
+    # Wasserstein between the empirical distributions (1d)
     y.ctr = sample.ctr[, x]
     y.itv = sample.itv[, x]
     WS = wasserstein1d(a=y.ctr, b=y.itv, p=1) 
     return(WS)
   })
-  
   return(allWS)
 }
 
@@ -87,8 +85,8 @@ WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
 ## Parametric test (change in trend in parameters)
 trend.stats.cdf = function(y, nt, monthly=TRUE) {
   if (monthly == TRUE) {
-    mint = 12   # because we know the first one or two years are pre-intervention
-    maxt = nt - 3
+    mint = 24   # because we know the first one or two years are pre-intervention
+    maxt = nt - 4
     seglen = mint:maxt
   } else {
     mint = 2   
@@ -103,7 +101,12 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
                  c(seg1, rep(seg1[length(seg1)], length(seg2))),
                  c(rep(0, length(seg1)), seg2-seg2[1]+1))
     
-    lmfit = lm(y ~ -1 + Xmat)
+    if (!is.null(y.ctr)) {
+      y.dif = y.itv - y.ctr
+    } else { y.dif = y.itv }
+    
+    # fit simple trend model (linear regression)
+    lmfit = lm(y.dif ~ -1 + Xmat)
     vec = c(0, -1, 1)
     sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
     stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
@@ -133,12 +136,12 @@ trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
 delay.set = 1:20
 
 
-## (1) Scenario 1: CIBA, control and intervention time series
-## Simulation to get the critical value
+## (1) Simulation: CIBA, control and intervention time series
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
 
+## Simulation to get the critical value
 Nsim = 1000
 getCritical1 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   npost = n
@@ -200,12 +203,12 @@ save(simResult.mu1, getCritical1,
      file="sim_result_distribution_change_AMOC.RData")
 
 
-## (2) Scenario 2: BA, intervention time series only
-## Simulation to get the critical value
+## (2) Simulation: BA, intervention time series only
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
 
+## Simulation to get the critical value
 Nsim = 1000
 getCritical2 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   npost = n
