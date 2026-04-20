@@ -98,7 +98,7 @@ sigma = 0.05            # noise level
 delay.set = 1:20
 
 
-## (1) Scenario CIBA, look at the difference between intervention and control
+## (1) Simulation CIBA: look at the difference between intervention and control
 ## Simulation to get the critical values of the trend difference test
 alpha = 0.95   # significance level
 Nsim = 1000
@@ -152,7 +152,7 @@ proc.time() - time.start
 save(simResult.v1, getCritical.v1, file="sim_result_trend_change_AMOC.RData")
 
 
-## (2) Scenario BA, when there is only an intervention time series
+## (2) Simulation: BA, when there is only an intervention time series
 getCritical.v2 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   npost = n
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
