@@ -55,7 +55,7 @@ CIsim.cdf = function(seed=10, npre, npost, level, trend, ns=100) {
 # Wasserstein distance
 # library(transport)
 
-# a function for this task
+# Control and intervention time series
 WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   ns = ncol(sample.ctr)
   
@@ -70,8 +70,19 @@ WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   return(allWS)
 }
 
-# WSdist(sample.ctr = sample.control, sample.itv = sample.interv,
-#        bw=0.3, nd=50)
+# Intervention time series only
+WSdist2 = function(sample.itv, npre, bw=0.5, nd=50) {
+  ns = ncol(sample.itv)
+  y.ctr = sample.itv[, 1:npre]
+  
+  allWS = sapply(1:ns, FUN=function(x) {
+    # compare the current distribution to the baseline distribution
+    y.itv = sample.itv[, x]
+    WS = wasserstein1d(a=y.ctr, b=y.itv, p=1) 
+    return(WS)
+  })
+  return(allWS)
+}
 
 ## Parametric test (change in trend in parameters)
 trend.stats.cdf = function(y, nt, monthly=TRUE) {
@@ -117,22 +128,19 @@ mu = 10
 sigma = 1
 # trend increment, from 5% to 100% over 10 years
 trend.increase.mu = round(mu * c(0.05, seq(0.1, 1, by=0.1)) / 120, 4)
-# trend increment, from 50% to 200% over 10 years
-trend.increase.sigma = round(sigma * seq(0.5, 2, by=0.5) / 120, 4)
-
-# if we want to test the combinations of changes
-# trend.combine = cbind(trend.increase.mu, rep(trend.increase.sigma, each=3)[-1])
 
 # delay in effect
 delay.set = 1:20
 
+
+## (1) Scenario 1: CIBA, control and intervention time series
 ## Simulation to get the critical value
 alpha = 0.95   # significance level
 bw = 0.3    # band width for density estimation
 nd = 50     # number of division for density estimation
 
 Nsim = 1000
-getCritical = sapply(npost.vec[c(1, 17, 33)], FUN=function(n) {
+getCritical1 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   npost = n
   
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
@@ -152,13 +160,11 @@ getCritical = sapply(npost.vec[c(1, 17, 33)], FUN=function(n) {
   return(criticVal)
 })
 
-save(getCritical, file="sim_result_distribution_change_AMOC.RData")
-
 
 ## Repeat a large number of times
 simN = 1000
 time.start = proc.time()
-simResult.mu = lapply(1:simN, FUN=function(i) {
+simResult.mu1 = lapply(1:simN, FUN=function(i) {
   
   teststat.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
     
@@ -190,33 +196,69 @@ simResult.mu = lapply(1:simN, FUN=function(i) {
 proc.time() - time.start
 
 # save the result
-save(simResult.mu, getCritical, file="sim_result_distribution_change_AMOC.RData")
+save(simResult.mu1, getCritical1, 
+     file="sim_result_distribution_change_AMOC.RData")
 
 
-## change in variance
-time.start = proc.time()
-simResult.sigma = lapply(1:simN, FUN=function(i) {
+## (2) Scenario 2: BA, intervention time series only
+## Simulation to get the critical value
+alpha = 0.95   # significance level
+bw = 0.3    # band width for density estimation
+nd = 50     # number of division for density estimation
+
+Nsim = 1000
+getCritical2 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
+  npost = n
   
-  teststat.list = lapply(1:length(trend.increase.sigma), FUN=function(m) {
+  Tmax.list = sapply(1:Nsim, FUN=function(i) {
+    nt = npre + npost
+    sim.sample = CIsim.cdf(seed=i, npre, npost, level=c(mu, sigma), 
+                           trend=c(0, 0), ns=200)
     
-    trend.interv.sigma = trend.increase.sigma[m]
+    # calculate the distance measure
+    diff.sample = WSdist2(sample.itv = sim.sample$sample.itv,
+                          npre=npre, bw=bw, nd=nd)
     
+    testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
+    return(testStats)
+  })
+  
+  criticVal = quantile(Tmax.list[1, ], probs=0.95)
+  return(criticVal)
+})
+
+
+## Repeat a large number of times
+simN = 1000
+time.start = proc.time()
+simResult.mu2 = lapply(1:simN, FUN=function(i) {
+  
+  teststat.list = lapply(1:length(trend.increase.mu), FUN=function(m) {
+    
+    trend.interv.mu = trend.increase.mu[m]
+    
+    npost.max = npost.vec[length(npost.vec)]
+    ntt = npre + npost.max
+    
+    # if using delay in effect, otherwise, set delay to 0
     delay = sample(delay.set, size=1)
     # delay = 0
     npre.delay = npre + delay
     npost.delay = npost.max - delay
-    sim.sample = CIsim.cdf(seed=i*length(trend.increase.sigma)+m, 
-                           npre=npre.delay, npost=npost.delay, level=c(mu, sigma), 
-                           trend=c(0, trend.interv.sigma), ns=200)
+    sim.sample = CIsim.cdf(seed=i*length(trend.increase.mu)+m, 
+                           npre=npre.delay, npost=npost.delay, 
+                           level=c(mu, sigma), 
+                           trend=c(trend.interv.mu, 0), 
+                           ns=200)
     
     teststat = sapply(npost.vec, FUN=function(n) {
       npost = n
       nt = npre + npost
       
       # calculate the distance measure
-      diff.sample = WSdist(sample.ctr = sim.sample$sample.ctr[, 1:nt],
-                           sample.itv = sim.sample$sample.itv[, 1:nt],
-                           bw=bw, nd=nd)
+      diff.sample = WSdist2(sample.itv = sim.sample$sample.itv[, 1:nt],
+                            npre=npre, bw=bw, nd=nd)
+      
       testStats = trend.stats.cdf(y=diff.sample, nt=nt, monthly=TRUE)
       return(testStats)
     })
@@ -228,7 +270,7 @@ proc.time() - time.start
 
 
 # save the result
-save(simResult.mu, simResult.sigma, getCritical, 
+save(simResult.mu1, simResult.mu2, getCritical1, getCritical2, 
      file="sim_result_distribution_change_AMOC.RData")
 
 
