@@ -24,46 +24,6 @@ CIsim = function(seed=10, npre, npost, level, trend, sigma) {
   return(list(y.ctr=y.control, y.itv=y.interv))
 }
 
-## Functions to calculate the test statistics of a trend difference
-# beta_1 v.s. beta_0
-trend.stats = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
-  # If we only have the intervention time series, set y.ctr to NULL
-  
-  if (monthly == TRUE) {
-    mint = 12   # because we know the first one or two years are pre-intervention
-    maxt = nt - 3
-    seglen = mint:maxt
-  } else {
-    mint = 2
-    maxt = nt - 1
-    seglen = mint:maxt
-  }
-  
-  # evaluate the test statistics for different choices of changpoint
-  stats.vec = sapply(1:length(seglen), FUN=function(m){
-    seg1 = 1:seglen[m]
-    seg2 = (seglen[m]+1):nt
-    Xmat = cbind(rep(1, nt), 
-                 c(seg1, rep(seg1[length(seg1)], length(seg2))),
-                 c(rep(0, length(seg1)), seg2-seg2[1]+1))
-    
-    if (!is.null(y.ctr)) {
-      y.dif = y.itv - y.ctr
-    } else { y.dif = y.itv }
-    
-    # fit simple trend model (linear regression)
-    lmfit = lm(y.dif ~ -1 + Xmat)
-    vec = c(0, -1, 1)
-    sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
-    stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
-  })
-  
-  # find the time point (tau) that maximises the test statistics
-  # tau could be a potential changepoint, if it is greater that the critical value
-  return(c(Tmax = max(abs(stats.vec)), 
-           cpt = which.max(abs(stats.vec))[1] + mint))
-}
-
 
 ## ---------------------------
 ## Run the simulation study
