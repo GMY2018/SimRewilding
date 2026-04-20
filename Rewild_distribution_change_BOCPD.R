@@ -53,35 +53,6 @@ WSdist = function(sample.ctr, sample.itv, bw=0.5, nd=50) {
   return(allWS)
 }
 
-## Parametric test (change in trend in parameters)
-trend.stats.cdf = function(y, nt, monthly=TRUE) {
-  if (monthly == TRUE) {
-    mint = 12   # because we know the first one or two years are pre-intervention
-    maxt = nt - 3
-    seglen = mint:maxt
-  } else {
-    mint = 2   
-    maxt = nt - 1
-    seglen = mint:maxt
-  }
-  
-  stats.vec = sapply(1:length(seglen), FUN=function(m){
-    seg1 = 1:seglen[m]
-    seg2 = (seglen[m]+1):nt
-    Xmat = cbind(rep(1, nt), 
-                 c(seg1, rep(seg1[length(seg1)], length(seg2))),
-                 c(rep(0, length(seg1)), seg2-seg2[1]+1))
-    
-    lmfit = lm(y ~ -1 + Xmat)
-    vec = c(0, -1, 1)
-    sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
-    stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
-  })
-  
-  return(c(Tmax = max(abs(stats.vec)), 
-           cpt = which.max(abs(stats.vec))[1] + mint))
-}
-
 
 ## ---------------------------
 ## Run the simulation study
