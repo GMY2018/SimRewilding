@@ -135,7 +135,7 @@ getCritical = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
     nt = npre + npost
     # the null hypothesis has trend 0
-    sim.ts = CIsim.ar(seed=n, npre, npost, level, trend=c(0, 0), phi=phi, sigma)
+    sim.ts = CIsim.ar(seed=i, npre, npost, level, trend=c(0, 0), phi=phi, sigma)
     testStats = trend.stats.ar(y.ctr=NULL,   # y.ctr=sim.ts$y.ctr
                                y.itv=sim.ts$y.itv, 
                                nt=nt, monthly=TRUE)
