@@ -108,7 +108,7 @@ simResult = lapply(1:simN, FUN=function(s) {
   change.list = sapply(1:length(trend.increase), FUN=function(m) {
     
     # simulate time series with different scales of trend
-    trend.interv = trend.increase[m]
+    trend.interv = trend.control + trend.increase[m]
     
     # if using delay in effect, otherwise, set delay to 0
     delay = sample(delay.set, size=1)
@@ -156,7 +156,7 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
   change.list = sapply(1:length(trend.increase), FUN=function(m) {
     
     # simulate time series with different scales of trend
-    trend.interv = trend.increase[m]
+    trend.interv = trend.control + trend.increase[m]
     
     # if using delay in effect, otherwise, set delay to 0
     delay = sample(delay.set, size=1)
