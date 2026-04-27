@@ -135,8 +135,10 @@ getCritical = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
     nt = npre + npost
     # the null hypothesis has trend 0
-    sim.ts = CIsim.ar(seed=i, npre, npost, level, trend=c(0, 0), phi=phi, sigma)
-    testStats = trend.stats.ar(y.ctr=NULL,   # y.ctr=sim.ts$y.ctr
+    sim.ts = CIsim.ar(seed=i, npre, npost, level, 
+                      trend=c(trend.control, trend.control), 
+                      phi=phi, sigma)
+    testStats = trend.stats.ar(y.ctr=NULL, 
                                y.itv=sim.ts$y.itv, 
                                nt=nt, monthly=TRUE)
     return(testStats)
@@ -153,7 +155,7 @@ simResult = lapply(1:simN, FUN=function(s) {
   
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
-    trend.interv = trend.increase[m]
+    trend.interv = trend.control + trend.increase[m]
     npost.max = npost.vec[length(npost.vec)]
     ntt = npre + npost.max
     
@@ -171,7 +173,7 @@ simResult = lapply(1:simN, FUN=function(s) {
     teststat = sapply(npost.vec, FUN=function(n) {
       npost = n
       nt = npre + npost
-      testStats = trend.stats.ar(y.ctr=NULL,  # sim.ts$y.ctr[1:nt]
+      testStats = trend.stats.ar(y.ctr=NULL,
                                  y.itv=sim.ts$y.itv[1:nt], 
                                  nt=nt, monthly=TRUE)
       return(testStats)
