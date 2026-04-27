@@ -73,7 +73,7 @@ simResult = lapply(1:Nsim, FUN=function(s) {
    bocpd.list = sapply(1:length(trend.increase), FUN=function(m) {
     
     # simulate time series with different scales of trend
-    trend.interv = trend.increase[m]
+    trend.interv = trend.control + trend.increase[m]
     
     delay = sample(delay.set, size=1)   # if there is a delay effect
     # delay = 0
