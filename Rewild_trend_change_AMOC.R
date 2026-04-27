@@ -107,7 +107,8 @@ getCritical.v1 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
     nt = npre + npost
     # the null hypothesis has trend 0
-    sim.ts = CIsim(seed=i, npre, npost, level, trend=c(0, 0), sigma)
+    sim.ts = CIsim(seed=i, npre, npost, level, 
+                   trend=c(trend.control, trend.control), sigma)
     testStats = trend.stats(y.ctr=sim.ts$y.ctr, y.itv=sim.ts$y.itv, nt=nt,
                             monthly=TRUE)
     return(testStats)
@@ -122,7 +123,7 @@ simResult.v1 = lapply(1:simN, FUN=function(i) {
  
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
-    trend.interv = trend.increase[m]
+    trend.interv = trend.control + trend.increase[m]
     
     delay = sample(delay.set, size=1)   # sample a delay period
     # delay = 0   # if there is no delay effect, set it to 0
@@ -158,7 +159,8 @@ getCritical.v2 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
     nt = npre + npost
     # the null hypothesis has trend 0
-    sim.ts = CIsim(seed=i, npre, npost, level, trend=c(0, 0), sigma)
+    sim.ts = CIsim(seed=i, npre, npost, level, 
+                   trend=c(trend.control, trend.control), sigma)
     testStats = trend.stats(y.ctr=NULL, y.itv=sim.ts$y.itv, 
                             nt=nt, monthly=TRUE)
     return(testStats)
@@ -172,7 +174,7 @@ simResult.v2 = lapply(1:simN, FUN=function(i) {
  
   teststat.list = lapply(1:length(trend.increase), FUN=function(m) {
     
-    trend.interv = trend.increase[m]
+    trend.interv = trend.control + trend.increase[m]
     
     delay = sample(delay.set, size=1)   # sample a delay period
     # delay = 0   # if there is no delay effect, set it to 0
