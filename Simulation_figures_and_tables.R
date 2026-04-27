@@ -13,7 +13,7 @@ library(RColorBrewer)
 # Load the saved simulation result
 load("sim_result_trend_change_AMOC.RData")
 # load("sim_result_trend_change_AMOC_AR1.RData")  
-# Use the same method for plotting the AR1 scenario
+# Use the same code for plotting the AR1 scenario, just change the object names
 
 npre = 24
 npost.vec = seq(24, 120, by=12) 
@@ -202,7 +202,7 @@ ggsave(filename="Sim_distribution_AMOC_location_2.png", plot=p2,
 ## Detecting change with the forecast error method
 load("sim_result_trend_change_Forecast.RData")
 # load("sim_result_distribution_change_Forecast.RData")
-# Use the same method for the distribution change scenario.
+# Use the same code for distribution change, just change the object names.
 
 npre = 24
 npost.vec = seq(24, 120, by=12) 
@@ -264,7 +264,7 @@ summary.mat = round(summary.mat, 2)
 ## Detecting change with the BOCPD method
 load("sim_result_trend_change_BOCPD.RData")
 # load("sim_result_distribution_change_BOCPD.RData")
-# Use the same method for the distribution change scenario.
+# Use the same code for distribution change, just change the object names.
 
 npre = 24
 npost.vec = seq(24, 120, by=12) 
