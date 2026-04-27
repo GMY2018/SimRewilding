@@ -143,7 +143,7 @@ nd = 50     # number of division for density estimation
 
 ## Simulation to get the critical value
 Nsim = 1000
-getCritical1 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
+getCritical.mu1 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   npost = n
   
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
@@ -199,7 +199,7 @@ simResult.mu1 = lapply(1:simN, FUN=function(i) {
 proc.time() - time.start
 
 # save the result
-save(simResult.mu1, getCritical1, 
+save(simResult.mu1, getCritical.mu1, 
      file="sim_result_distribution_change_AMOC.RData")
 
 
@@ -210,7 +210,7 @@ nd = 50     # number of division for density estimation
 
 ## Simulation to get the critical value
 Nsim = 1000
-getCritical2 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
+getCritical.mu2 = sapply(npost.vec[c(3, 7)], FUN=function(n) {
   npost = n
   
   Tmax.list = sapply(1:Nsim, FUN=function(i) {
@@ -273,7 +273,7 @@ proc.time() - time.start
 
 
 # save the result
-save(simResult.mu1, simResult.mu2, getCritical1, getCritical2, 
+save(simResult.mu1, simResult.mu2, getCritical.mu1, getCritical.mu2, 
      file="sim_result_distribution_change_AMOC.RData")
 
 
