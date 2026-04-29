@@ -4,7 +4,7 @@
 
 ## Some essential functions for the forecast error method
 ## For use in the Python interactive interface
-## Require the pre-run look-up table, which is saved as "CritValTable.rds"
+## Original functions are available from: https://github.com/grundy95/changepoint.forecast
 
 library(purrr)
 library(tidyverse)
