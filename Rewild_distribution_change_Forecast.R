@@ -7,8 +7,8 @@
 # We consider location changes of the distribution
 
 library(transport)
-# library(changepoint.forecast)    # calling the package
-load("Forecast_functions.R")       # loading essential functions only
+# library(changepoint.forecast)      # calling the package
+source("Forecast_functions.R")       # loading essential functions only
 
 
 ## Functions to generate simulated time series (parameter change)
