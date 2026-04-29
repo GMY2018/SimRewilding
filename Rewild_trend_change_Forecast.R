@@ -6,7 +6,8 @@
 # Detecting changepoint as a change in the forecast errors
 # This can be applied to time series with auto-correlated noise
 
-library(changepoint.forecast)
+# library(changepoint.forecast)    # if calling the package
+source("Forecast_functions.R")     # if using the essential functions only
 
 
 ## Functions to generate simulated time series
@@ -129,10 +130,15 @@ simResult = lapply(1:simN, FUN=function(s) {
     lm.predict = predict(lmfit, newdata=Xmat[-(1:npre), ])
     r.ts = c(lmfit$residuals, lm.predict - y.ts[-(1:npre)])
     
-    # changepoint detection on residual time series
-    cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
-                           detector="PageCUSUM", forecastErrorType="Both")
-    time.est = cpt.fcst@tau      # based on errors
+    # changepoint detection on error time series
+    # Using the changepoint.forecast package
+    # cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,   
+    #                        detector="PageCUSUM", forecastErrorType="Both")
+    # time.est = cpt.fcst@tau    
+
+    # Using the essential functions from "Forecast_functions.R"
+    cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre, detector="PageCUSUM")
+    time.est = cpt.fcst$tau
     
     # retrieve the changepoint using AMOC for trend change
     if (!is.infinite(time.est)) {
@@ -181,10 +187,15 @@ simResult.ar = lapply(1:simN, FUN=function(s) {
                               n.ahead=npost.max)
       r.ts = c(armafit$residuals, arima.predict$pred - y.ts[-(1:npre)])
       
-      # changepoint detection on residual time series
-      cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
-                             detector="PageCUSUM", forecastErrorType="Both")
-      time.est = cpt.fcst@tau      # based on errors
+      # changepoint detection on error time series
+      # Using the changepoint.forecast package
+      # cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,   
+      #                        detector="PageCUSUM", forecastErrorType="Both")
+      # time.est = cpt.fcst@tau    
+
+      # Using the essential functions from "Forecast_functions.R"
+      cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre, detector="PageCUSUM")
+      time.est = cpt.fcst$tau
       
       # retrieve the changepoint
       if (!is.infinite(time.est)) {
