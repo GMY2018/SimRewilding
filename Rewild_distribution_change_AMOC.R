@@ -101,12 +101,8 @@ trend.stats.cdf = function(y, nt, monthly=TRUE) {
                  c(seg1, rep(seg1[length(seg1)], length(seg2))),
                  c(rep(0, length(seg1)), seg2-seg2[1]+1))
     
-    if (!is.null(y.ctr)) {
-      y.dif = y.itv - y.ctr
-    } else { y.dif = y.itv }
-    
     # fit simple trend model (linear regression)
-    lmfit = lm(y.dif ~ -1 + Xmat)
+    lmfit = lm(y ~ -1 + Xmat)
     vec = c(0, -1, 1)
     sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
     stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
