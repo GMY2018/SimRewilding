@@ -2,12 +2,14 @@
 ## Example 2: change in a time series of distributions
 ## ------------------------------------------------------
 
-# Using the changepoint.forecast package for online detection
+# Using the forecast error metod for online detection
 # Detecting changepoint as a change in the forecast errors
 # We consider location changes of the distribution
 
 library(transport)
-library(changepoint.forecast)
+# library(changepoint.forecast)    # calling the package
+
+load("Forecast_functions.R")       # loading essential functions only
 
 
 ## Functions to generate simulated time series (parameter change)
@@ -164,10 +166,15 @@ simResult.mu1 = lapply(1:simN, FUN=function(s) {
     lm.predict = predict(lmfit, newdata=Xmat[-(1:npre), ])
     r.ts = c(lmfit$residuals, lm.predict - y.ts[-(1:npre)])
     
-    # changepoint detection on residual time series
-    cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
-                           detector="PageCUSUM", forecastErrorType="Both")
-    time.est = cpt.fcst@tau      # based on errors
+    # changepoint detection on error time series
+    # Using the changepoint.forecast package
+    # cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,   
+    #                        detector="PageCUSUM", forecastErrorType="Both")
+    # time.est = cpt.fcst@tau    
+
+    # Using the essential functions from "Forecast_functions.R"
+    cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre, detector="PageCUSUM")
+    time.est = cpt.fcst$tau
     
     # retrieve the changepoint using AMOC for trend change
     if (!is.infinite(time.est)) {
@@ -214,10 +221,15 @@ simResult.mu2 = lapply(1:simN, FUN=function(s) {
     lm.predict = predict(lmfit, newdata=Xmat[-(1:npre), ])
     r.ts = c(lmfit$residuals, lm.predict - y.ts[-(1:npre)])
     
-    # changepoint detection on residual time series
-    cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,
-                           detector="PageCUSUM", forecastErrorType="Both")
-    time.est = cpt.fcst@tau      # based on errors
+    # changepoint detection on error time series
+    # Using the changepoint.forecast package
+    # cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre,   
+    #                        detector="PageCUSUM", forecastErrorType="Both")
+    # time.est = cpt.fcst@tau    
+
+    # Using the essential functions from "Forecast_functions.R"
+    cpt.fcst = cptForecast(errors=as.vector(r.ts), m=npre, detector="PageCUSUM")
+    time.est = cpt.fcst$tau
     
     # retrieve the changepoints
     if (!is.infinite(time.est)) {
