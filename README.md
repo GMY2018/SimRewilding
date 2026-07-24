@@ -1,15 +1,22 @@
 # SimRewilding
 
-Simulation study to demonstrate the use of changepoint detection methods on field sampling data from rewilding studies.
+This repository contains the R code for running the simulation study to demonstrate the use of changepoint detection methods on field sampling data from rewilding studies. It accompanies the interacitive tool <b>TRACE</b> (https://github.com/M-DICE/trace) which helps ecologists answer the question: how quickly does a restoration intervention produce a measurable effect?
 
-### This is a place for sharing the simulation code
+## The simulation study
 
-We simulated time series with trend change and time series of distributions with distribution parameter change.
+We consider typical type of experimental design, that is, paired intervention and control time series, with observations from both before and after the management. <b>Two types of changes are considered, (1) the trend change and (2) the distribution change.</b> For distribution change, we consider a change in the distribution parameter. 
 
-We use the at most one change (AMOC) method for detecting a single changepoint offline for both types of changes with higher and lower sampling frequencies respectively. 
+<b>For each type of change, we simulate time series of two different frequencies, with one being the 1/12 of the other, mimicing the difference between a monthly and an annual samplling frequencies</b>. Each time series has one changepoint, and it usually happens after the intervention point. The length of post-intervention period is set to 10 time points for the low frequency time series and 120 time points for the high frequency time series. For the high frequency time series, we consider both the independent and auto-correlated noises; whereas for the lower frequency time series, only the independent noises are considered. 
 
-We use the forecast error method [1] for online detection of a trend change (i.e., regression coefficient change) in higher frequency time seires with i.i.d. or auto-correlated noises. We use the Bayesian online changepoint detection (BOCPD) method [2] for online detection of trend change in time seires with i.i.d. noises when the sampling frequency is low. 
+<b>We implement two types of changepoint detection approaches,</b> (a) the off-line analysis (or retrospective analysis) which detects at most one changepoint in the time series, and (b) the online analysis (or the streamline analysis) which scans through the time series from the beginning and stops once the first changepoint is detected. <b>We use the at most one change (AMOC) method for the off-line analysis and the forecast error-based (Forecast) method [1] and the Bayesian online changepoint detection (BOCPD) method [2] for online detection.</b> Specifically, we use the Forecast method to detect the change in high frequency time seires and the BOCPD method to detect the change in low frequency time seires . 
 
+## How to run the code
+
+This repository contains all scripts required to run the above simulation. The scripts named "Rewild_XXXX_change_XXXX.R" are for simulating the trend and distribution change scenarios. Two scripts named "XXXX_functions.R" contain functions for implementing the two online chagnepoint detection methods.
+
+To run the simulation, one will need to <b>install R</b> (https://cran.r-project.org/) first. A version from 4.3.1 onwards is recommended. One will also need to install R package <b>transport</b> (https://cran.r-project.org/web/packages/transport/index.html), which is used to calculate the Wasserstein distance for the distribution change scenarios. We pulled the essential functions from the R package <b>changepoint.forecast</b> (https://github.com/grundy95/changepoint.forecast) into the script "Forecast_functions". One can also install the package and call the functions from the package.
+
+It is recommended that one download all the files from the repository, so that one will not miss any files sourced by the simulation scripts. Remember to change the working directory to the folder containing these files.
 
 ### References
 
