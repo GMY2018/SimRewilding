@@ -10,13 +10,27 @@ We consider typical type of experimental design, that is, paired intervention an
 
 <b>We implement two types of changepoint detection approaches,</b> (a) the off-line analysis (or retrospective analysis) which detects at most one changepoint in the time series, and (b) the online analysis (or the streamline analysis) which scans through the time series from the beginning and stops once the first changepoint is detected. <b>We use the at most one change (AMOC) method for the off-line analysis and the forecast error-based (Forecast) method [1] and the Bayesian online changepoint detection (BOCPD) method [2] for online detection.</b> Specifically, we use the Forecast method to detect the change in high frequency time seires and the BOCPD method to detect the change in low frequency time seires . 
 
-## How to run the code
+## What's in the repository
 
-This repository contains all scripts required to run the above simulation. The scripts named "Rewild_XXXX_change_XXXX.R" are for simulating the trend and distribution change scenarios. Two scripts named "XXXX_functions.R" contain functions for implementing the two online chagnepoint detection methods.
+This repository contains all scripts required to run the above simulation. It is recommended that one download all the files from the repository, so that one will not miss any files sourced by the simulation scripts. 
 
-To run the simulation, one will need to <b>install R</b> (https://cran.r-project.org/) first. A version from 4.3.1 onwards is recommended. One will also need to install R package <b>transport</b> (https://cran.r-project.org/web/packages/transport/index.html), which is used to calculate the Wasserstein distance for the distribution change scenarios. We pulled the essential functions from the R package <b>changepoint.forecast</b> (https://github.com/grundy95/changepoint.forecast) into the script "Forecast_functions". One can also install the package and call the functions from the package.
+<ul> 
+  <li>The scripts named "Rewild_trend_change_XXXX.R" are for simulating the distribution change scenarios, where XXXX indicates the method used for changepoint detection.</li>
+  <li>The scripts named "Rewild_distribution_change_XXXX.R" are for simulating the distribution change scenarios, where XXXX indicates the method used for changepoint detection.</li>
+  <li>The scripts named "XXXX_functions.R" contain functions for implementing the two online chagnepoint detection methods.</li>
+  <li>The script named "Simulation_figures_and_tables.R" is for producing summary tables and figures of the simulation result.</li>
+  <li>The data file "CritValTable.rds" contains the table of critical values for the Forecast method.</li>
+</ul>
 
-It is recommended that one download all the files from the repository, so that one will not miss any files sourced by the simulation scripts. Remember to change the working directory to the folder containing these files.
+## How to run the simulation
+
+First <b>install R</b> (https://cran.r-project.org/) in one hasn't done so. A version from 4.3.1 onwards is recommended. 
+
+Then install missing packages if required. In particular, one will also need to install R package <b>transport</b> (https://cran.r-project.org/web/packages/transport/index.html), which is used to calculate the Wasserstein distance for the distribution change scenarios. We pulled the essential functions from the R package <b>changepoint.forecast</b> (https://github.com/grundy95/changepoint.forecast) into the script "Forecast_functions". One can also install the package and call the functions from the package.
+
+Finally, run the code on the simulation scripts (that is, those named "Rewild_XXXX_change_XXXX.R).
+
+Remember to change the working directory to the folder containing the simulation scripts.
 
 ### References
 
