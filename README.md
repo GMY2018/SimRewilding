@@ -24,9 +24,9 @@ This repository contains all scripts required to run the above simulation. It is
 
 ## How to run the simulation
 
-First <b>install R</b> (https://cran.r-project.org/) in one hasn't done so. A version from 4.3.1 onwards is recommended. 
+First <b>install R</b> (https://cran.r-project.org/) if one hasn't done so. A version from 4.3.1 onwards is recommended. 
 
-Then install missing packages if required. In particular, one will also need to install R package <b>transport</b> (https://cran.r-project.org/web/packages/transport/index.html), which is used to calculate the Wasserstein distance for the distribution change scenarios. We pulled the essential functions from the R package <b>changepoint.forecast</b> (https://github.com/grundy95/changepoint.forecast) into the script "Forecast_functions". One can also install the package and call the functions from the package.
+Then install missing packages if required. We will need R package <b>transport</b> (https://cran.r-project.org/web/packages/transport/index.html) for calculating the Wasserstein distance between two distributions for the distribution change scenarios. We pulled the essential functions from the R package <b>changepoint.forecast</b> (https://github.com/grundy95/changepoint.forecast) into the script "Forecast_functions.R". One can also install the package and explore more of its functions if interested.
 
 Finally, run the code on the simulation scripts (that is, those named "Rewild_XXXX_change_XXXX.R).
 
