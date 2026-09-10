@@ -97,7 +97,7 @@ trend.stats = function(y.ctr=NULL, y.itv, nt, monthly=TRUE) {
     # fit simple trend model (linear regression)
     lmfit = lm(y.dif ~ -1 + Xmat)
     vec = c(0, -1, 1)
-    sddiff = sqrt(t(vec) %*% summary(lmfit)$cov.unscaled %*% vec)
+    sddiff = sqrt(t(vec) %*% (summary(lmfit)$cov.unscaled * summary(lmfit)$sigma^2) %*% vec)
     stats = (lmfit$coef[2] - lmfit$coef[3]) / sddiff
   })
   
